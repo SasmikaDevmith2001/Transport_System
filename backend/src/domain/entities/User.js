@@ -7,6 +7,7 @@ class User {
   constructor({
     id,
     roleId,
+    roleName,
     firstName,
     lastName,
     email,
@@ -22,6 +23,7 @@ class User {
   }) {
     this.id = id;
     this.roleId = roleId;
+    this.roleName = roleName;
     this.firstName = firstName;
     this.lastName = lastName;
     this.email = email;

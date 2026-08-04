@@ -5,5 +5,8 @@
  */
 export const navConfig = [
   { label: 'Dashboard', path: '/', icon: 'Dashboard' },
+  { label: 'Trips', path: '/trips', icon: 'LocalShipping', permission: 'trips:read' },
+  { label: 'Customers', path: '/customers', icon: 'Business', permission: 'customers:read' },
+  { label: 'Drivers', path: '/drivers', icon: 'Badge', permission: 'drivers:read' },
   { label: 'Users', path: '/users', icon: 'People', permission: 'users:read' },
 ];

@@ -12,6 +12,7 @@ import {
   Stack,
   MenuItem,
 } from '@mui/material';
+import { useRoles } from '../hooks/useUsers';
 
 const baseSchema = {
   firstName: Joi.string().trim().min(1).max(100).required(),
@@ -33,20 +34,15 @@ const createSchema = Joi.object({
 
 const updateSchema = Joi.object(baseSchema);
 
-const ROLE_OPTIONS = [
-  { id: 1, name: 'SUPER_ADMIN' },
-  { id: 2, name: 'ADMIN' },
-  { id: 3, name: 'DISPATCHER' },
-  { id: 4, name: 'DRIVER' },
-  { id: 5, name: 'CUSTOMER' },
-];
-
 /**
  * Shared create/edit dialog for the Users module. Switches validation
  * schema and default values based on whether `user` (edit) is provided.
+ * Role options are fetched from the backend rather than hardcoded, so the
+ * frontend never has to know role IDs in advance.
  */
 export default function UserFormDialog({ open, user = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!user;
+  const { data: roles = [] } = useRoles();
 
   const {
     control,
@@ -137,9 +133,9 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
               control={control}
               render={({ field }) => (
                 <TextField {...field} select label="Role" fullWidth error={!!errors.roleId} helperText={errors.roleId?.message}>
-                  {ROLE_OPTIONS.map((r) => (
+                  {roles.map((r) => (
                     <MenuItem key={r.id} value={r.id}>
-                      {r.name}
+                      {r.name.replace('_', ' ')}
                     </MenuItem>
                   ))}
                 </TextField>

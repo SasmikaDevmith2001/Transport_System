@@ -1,0 +1,90 @@
+const ApiResponse = require('../../application/common/ApiResponse');
+const { toTripResponseDto } = require('../../application/dtos/TripDto');
+const { parsePagination, buildMeta } = require('../../application/common/Pagination');
+
+class TripController {
+  constructor({
+    createTripUseCase,
+    getTripUseCase,
+    listTripsUseCase,
+    updateTripUseCase,
+    assignTripUseCase,
+    updateTripStatusUseCase,
+    deleteTripUseCase,
+  }) {
+    this.createTripUseCase = createTripUseCase;
+    this.getTripUseCase = getTripUseCase;
+    this.listTripsUseCase = listTripsUseCase;
+    this.updateTripUseCase = updateTripUseCase;
+    this.assignTripUseCase = assignTripUseCase;
+    this.updateTripStatusUseCase = updateTripStatusUseCase;
+    this.deleteTripUseCase = deleteTripUseCase;
+  }
+
+  create = async (req, res) => {
+    const trip = await this.createTripUseCase.execute({ ...req.body, createdBy: req.user.id });
+    return ApiResponse.success(res, {
+      message: 'Trip created successfully',
+      data: toTripResponseDto(trip),
+      statusCode: 201,
+    });
+  };
+
+  getById = async (req, res) => {
+    const trip = await this.getTripUseCase.execute(req.params.id, req.user);
+    return ApiResponse.success(res, {
+      message: 'Trip retrieved successfully',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  list = async (req, res) => {
+    const pagination = parsePagination(req.query);
+    const options = {
+      ...pagination,
+      status: req.query.status,
+      driverId: req.query.driverId,
+      customerId: req.query.customerId,
+      dateFrom: req.query.dateFrom,
+      dateTo: req.query.dateTo,
+    };
+    const { rows, total } = await this.listTripsUseCase.execute(options, req.user);
+
+    return ApiResponse.success(res, {
+      message: 'Trips retrieved successfully',
+      data: rows.map(toTripResponseDto),
+      meta: buildMeta({ page: pagination.page, pageSize: pagination.pageSize, total }),
+    });
+  };
+
+  update = async (req, res) => {
+    const trip = await this.updateTripUseCase.execute(req.params.id, req.body, req.user.id);
+    return ApiResponse.success(res, {
+      message: 'Trip updated successfully',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  assign = async (req, res) => {
+    const trip = await this.assignTripUseCase.execute(req.params.id, req.body.driverId, req.user.id);
+    return ApiResponse.success(res, {
+      message: 'Trip assigned successfully',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  updateStatus = async (req, res) => {
+    const trip = await this.updateTripStatusUseCase.execute(req.params.id, req.body.status, req.user);
+    return ApiResponse.success(res, {
+      message: 'Trip status updated successfully',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  remove = async (req, res) => {
+    await this.deleteTripUseCase.execute(req.params.id, req.user.id);
+    return ApiResponse.success(res, { message: 'Trip deleted successfully' });
+  };
+}
+
+module.exports = TripController;

@@ -24,12 +24,21 @@ npm run seed
 
 | Table | Purpose |
 |---|---|
-| `roles` | System roles (SUPER_ADMIN, ADMIN, DISPATCHER, DRIVER, CUSTOMER) |
+| `roles` | System roles (SUPER_ADMIN, ADMIN, DRIVER) |
 | `permissions` | Fine-grained `module:action` permissions |
 | `role_permissions` | Many-to-many mapping, RBAC |
 | `users` | System users with soft delete, audit fields |
 | `refresh_tokens` | JWT refresh token rotation/revocation tracking |
 | `audit_logs` | Generic audit trail for all entities |
+
+## Module 2: Customers, Drivers, Trips
+
+| Table | Purpose |
+|---|---|
+| `customers` | Client companies (e.g. Browns Group Sri Lanka) transport is outsourced for |
+| `drivers` | Driver profiles; `user_id` optionally links to a `users` login account (role DRIVER) |
+| `trips` | Trip records: customer, assigned driver, origin/destination, schedule, status |
+| `trip_stops` | Ordered delivery stops within a trip (`sequence_no`), each with its own status |
 
 Default seeded admin (change immediately in production):
 - email: `admin@anuradhatransport.lk`

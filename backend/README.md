@@ -38,7 +38,17 @@ The backend expects the schema to already exist (created by the sibling
 Swagger docs: `http://localhost:4000/api-docs`
 Health check: `http://localhost:4000/health`
 
-## Module 1: Authentication & User Management
+## Module 1: Authentication & Role-Based User Management
+
+### Roles
+
+Exactly three roles, seeded by the `database` project:
+
+| Role | Access |
+|---|---|
+| `SUPER_ADMIN` | Full system access: every permission, including role assignment and Super Admin account management |
+| `ADMIN` | Dashboard, Customers (full CRUD), Drivers (full CRUD), Trips (full CRUD + assign), Users (create/read/update only - no delete, cannot touch Super Admin accounts) |
+| `DRIVER` | `trips:read` only, scoped to trips assigned to them (enforced in the Trip module's use cases); own profile via `/auth/me` |
 
 ### Endpoints
 
@@ -53,6 +63,13 @@ Health check: `http://localhost:4000/health`
 | POST | `/api/v1/users` | Yes | `users:create` | Create user |
 | PUT | `/api/v1/users/:id` | Yes | `users:update` | Update user |
 | DELETE | `/api/v1/users/:id` | Yes | `users:delete` | Soft-delete user |
+| GET | `/api/v1/roles` | Yes | `roles:read` or `users:create`/`users:update` | List roles (for role-assignment dropdowns) |
+
+### Privilege-escalation guards
+Enforced in the use case layer, not just via permission checks:
+- Only `SUPER_ADMIN` can create a new Super Admin account or promote/demote an existing user into/out of the Super Admin role (`CreateUserUseCase`, `UpdateUserUseCase`).
+- Only `SUPER_ADMIN` can delete a Super Admin account (`DeleteUserUseCase`).
+- No user can delete their own account.
 
 ### Auth flow
 - JWT access token (short-lived, default 15m) carries `sub`, `email`,
@@ -83,3 +100,38 @@ once a test database is available - wire them through `supertest` against
 4. Add Presentation controller + routes, wire into `src/container`
 5. Mount routes in `src/presentation/routes/index.js`
 6. Add unit tests for use cases
+
+## Module 2: Customers, Drivers, Trips
+
+### Endpoints
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET/POST | `/api/v1/customers`, `/:id` | `customers:read/create` | Customer CRUD |
+| PUT/DELETE | `/api/v1/customers/:id` | `customers:update/delete` | |
+| GET/POST | `/api/v1/drivers`, `/:id` | `drivers:read/create` | Driver CRUD |
+| GET | `/api/v1/drivers/active` | `drivers:read` or trip create/update/assign | Lightweight lookup for assignment dropdowns |
+| PUT/DELETE | `/api/v1/drivers/:id` | `drivers:update/delete` | |
+| GET/POST | `/api/v1/trips`, `/:id` | `trips:read/create` | Trip CRUD, includes stops (delivery sequence) |
+| PATCH | `/api/v1/trips/:id/assign` | `trips:assign` | Assign a driver to a pending/assigned trip |
+| PATCH | `/api/v1/trips/:id/status` | `trips:update` or `trips:read` | Transition trip status (see lifecycle below) |
+| DELETE | `/api/v1/trips/:id` | `trips:delete` | |
+
+### Trip lifecycle
+`pending -> assigned -> in_progress -> completed`, or `-> cancelled` from any
+non-terminal state. Enforced by `Trip.canTransitionTo()` in the domain
+entity; invalid transitions return a 422 `ValidationError`.
+
+### Driver-scoped access (core Trip Management rule)
+`ListTripsUseCase` and `GetTripUseCase` resolve the acting Driver's own
+`drivers` row via `driverRepository.findByUserId(actor.id)` and force all
+queries to that driver's `id` - a Driver can never see or act on another
+driver's trips, regardless of query params sent by the client.
+`UpdateTripStatusUseCase` applies the same check before allowing a status
+change, so a driver can mark their own trip in-progress/completed but
+cannot touch anyone else's.
+
+To give a Driver-role user visibility into their assigned trips, their
+`drivers` row must have `userId` set to that user's `users.id` - either at
+creation (`POST /api/v1/drivers` with `userId`) or via update
+(`PUT /api/v1/drivers/:id`).

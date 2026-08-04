@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const IUserRepository = require('../../../domain/repositories/IUserRepository');
 const User = require('../../../domain/entities/User');
-const { User: UserModel } = require('../sequelize/models');
+const { User: UserModel, Role: RoleModel } = require('../sequelize/models');
 
 function toDomain(instance) {
   if (!instance) return null;
@@ -9,6 +9,7 @@ function toDomain(instance) {
   return new User({
     id: plain.id,
     roleId: plain.roleId,
+    roleName: plain.Role ? plain.Role.name : undefined,
     firstName: plain.firstName,
     lastName: plain.lastName,
     email: plain.email,
@@ -31,12 +32,12 @@ function toDomain(instance) {
  */
 class UserRepository extends IUserRepository {
   async findById(id) {
-    const instance = await UserModel.findByPk(id);
+    const instance = await UserModel.findByPk(id, { include: [RoleModel] });
     return toDomain(instance);
   }
 
   async findByEmail(email) {
-    const instance = await UserModel.findOne({ where: { email } });
+    const instance = await UserModel.findOne({ where: { email }, include: [RoleModel] });
     return toDomain(instance);
   }
 
@@ -80,6 +81,7 @@ class UserRepository extends IUserRepository {
 
     const { rows, count } = await UserModel.findAndCountAll({
       where,
+      include: [RoleModel],
       limit: pageSize,
       offset,
       order: [[sortBy, sortOrder]],

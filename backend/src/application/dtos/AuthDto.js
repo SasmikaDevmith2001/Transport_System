@@ -1,8 +1,12 @@
 const { toUserResponseDto } = require('./UserDto');
 
-function toLoginResponseDto({ user, accessToken, refreshToken }) {
+function toLoginResponseDto({ user, accessToken, refreshToken, role }) {
   return {
-    user: toUserResponseDto(user),
+    user: {
+      ...toUserResponseDto(user),
+      role: role ? role.name : null,
+      permissions: role ? role.permissions : [],
+    },
     accessToken,
     refreshToken,
   };

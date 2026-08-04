@@ -51,7 +51,7 @@ class RefreshTokenUseCase {
       permissions: role ? role.permissions : [],
     });
 
-    return { user, accessToken, refreshToken: newRefreshToken };
+    return { user, accessToken, refreshToken: newRefreshToken, role };
   }
 }
 

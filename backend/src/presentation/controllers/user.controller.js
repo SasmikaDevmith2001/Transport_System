@@ -12,7 +12,11 @@ class UserController {
   }
 
   create = async (req, res) => {
-    const user = await this.createUserUseCase.execute({ ...req.body, createdBy: req.user.id });
+    const user = await this.createUserUseCase.execute({
+      ...req.body,
+      createdBy: req.user.id,
+      actorRole: req.user.role,
+    });
     return ApiResponse.success(res, {
       message: 'User created successfully',
       data: toUserResponseDto(user),
@@ -41,7 +45,7 @@ class UserController {
   };
 
   update = async (req, res) => {
-    const user = await this.updateUserUseCase.execute(req.params.id, req.body, req.user.id);
+    const user = await this.updateUserUseCase.execute(req.params.id, req.body, req.user.id, req.user.role);
     return ApiResponse.success(res, {
       message: 'User updated successfully',
       data: toUserResponseDto(user),
@@ -49,7 +53,7 @@ class UserController {
   };
 
   remove = async (req, res) => {
-    await this.deleteUserUseCase.execute(req.params.id, req.user.id);
+    await this.deleteUserUseCase.execute(req.params.id, req.user.id, req.user.role);
     return ApiResponse.success(res, { message: 'User deleted successfully' });
   };
 }

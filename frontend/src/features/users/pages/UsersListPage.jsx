@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Box, Button, Stack, TextField, Typography, Chip } from '@mui/material';
+import { Box, Button, InputAdornment, Stack, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
 import IconButton from '@mui/material/IconButton';
 import { useSnackbar } from 'notistack';
+import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
 import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
+import StatusChip from '../../../components/feedback/StatusChip';
 import UserFormDialog from '../components/UserFormDialog';
 import { useUsersList, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useAuth } from '../../../contexts/AuthContext';
-
-const STATUS_COLOR = { active: 'success', inactive: 'default', suspended: 'error' };
 
 export default function UsersListPage() {
   const { hasPermission } = useAuth();
@@ -37,12 +38,13 @@ export default function UsersListPage() {
   const columns = [
     { field: 'fullName', headerName: 'Name', sortable: false },
     { field: 'email', headerName: 'Email', sortable: true },
+    { field: 'roleName', headerName: 'Role', sortable: false, render: (row) => row.roleName?.replace('_', ' ') || '-' },
     { field: 'phone', headerName: 'Phone', sortable: false, render: (row) => row.phone || '-' },
     {
       field: 'status',
       headerName: 'Status',
       sortable: true,
-      render: (row) => <Chip size="small" label={row.status} color={STATUS_COLOR[row.status] || 'default'} />,
+      render: (row) => <StatusChip status={row.status} />,
     },
     {
       field: 'actions',
@@ -107,23 +109,24 @@ export default function UsersListPage() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight={700}>
-          Users
-        </Typography>
-        {hasPermission('users:create') && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setEditingUser(null);
-              setFormOpen(true);
-            }}
-          >
-            New User
-          </Button>
-        )}
-      </Stack>
+      <PageHeader
+        title="User Management"
+        description="Manage system users, roles, and account access."
+        actions={
+          hasPermission('users:create') && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditingUser(null);
+                setFormOpen(true);
+              }}
+            >
+              New User
+            </Button>
+          )
+        }
+      />
 
       <TextField
         placeholder="Search by name or email"
@@ -133,7 +136,8 @@ export default function UsersListPage() {
           setPage(1);
           setSearch(e.target.value);
         }}
-        sx={{ mb: 2, width: 320 }}
+        sx={{ mb: 2, width: { xs: '100%', sm: 340 } }}
+        InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
       />
 
       <DataTable

@@ -7,6 +7,7 @@ function toUserResponseDto(user) {
   return {
     id: user.id,
     roleId: user.roleId,
+    roleName: user.roleName,
     firstName: user.firstName,
     lastName: user.lastName,
     fullName: user.fullName,

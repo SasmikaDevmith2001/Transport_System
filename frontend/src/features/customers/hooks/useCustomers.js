@@ -1,0 +1,34 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { customersApi } from '../api/customersApi';
+
+export function useCustomersList(params) {
+  return useQuery({
+    queryKey: ['customers', params],
+    queryFn: () => customersApi.list(params),
+    keepPreviousData: true,
+  });
+}
+
+export function useCreateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: customersApi.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
+  });
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => customersApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
+  });
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: customersApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
+  });
+}
