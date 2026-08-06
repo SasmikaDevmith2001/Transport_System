@@ -11,6 +11,7 @@ class Customer {
     country,
     status,
     notes,
+    contactPersons,
     createdBy,
     updatedBy,
     createdAt,
@@ -28,6 +29,7 @@ class Customer {
     this.country = country;
     this.status = status;
     this.notes = notes;
+    this.contactPersons = contactPersons;
     this.createdBy = createdBy;
     this.updatedBy = updatedBy;
     this.createdAt = createdAt;

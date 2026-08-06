@@ -4,15 +4,18 @@ import { joiResolver } from '@hookform/resolvers/joi';
 import Joi from 'joi';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
   TextField,
-  Stack,
   MenuItem,
   Grid,
+  Typography,
+  IconButton,
+  Box,
+  Divider,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 const driverSchema = Joi.object({
   firstName: Joi.string().trim().min(1).max(100).required(),
@@ -59,11 +62,31 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
   }, [open, driver, reset]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isEdit ? 'Edit Driver' : 'New Driver'}</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          <Grid item xs={12} sm={6}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 1 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            {isEdit ? 'Edit Driver' : 'New Driver'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isEdit ? 'Update driver information below' : 'Fill in the details to register a new driver'}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      <Divider sx={{ mx: 3, mt: 1 }} />
+
+      <DialogContent sx={{ px: 3, py: 3 }}>
+        {/* Section: Personal Info */}
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          Personal Information
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="firstName"
               control={control}
@@ -72,7 +95,7 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="lastName"
               control={control}
@@ -81,7 +104,7 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="nicNumber"
               control={control}
@@ -90,7 +113,7 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="phone"
               control={control}
@@ -99,7 +122,38 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Email" fullWidth error={!!errors.email} helperText={errors.email?.message} />
+              )}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} select label="Status" fullWidth>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem value="on_leave">On Leave</MenuItem>
+                  <MenuItem value="suspended">Suspended</MenuItem>
+                </TextField>
+              )}
+            />
+          </Grid>
+        </Grid>
+
+        {/* Section: License & Vehicle */}
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          License & Vehicle
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="licenseNumber"
               control={control}
@@ -108,7 +162,7 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="licenseExpiry"
               control={control}
@@ -125,57 +179,42 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="vehicleNumber"
               control={control}
               render={({ field }) => <TextField {...field} label="Vehicle Number" fullWidth />}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} select label="Status" fullWidth>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                  <MenuItem value="on_leave">On Leave</MenuItem>
-                  <MenuItem value="suspended">Suspended</MenuItem>
-                </TextField>
-              )}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} label="Email" fullWidth error={!!errors.email} helperText={errors.email?.message} />
-              )}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
+        </Grid>
+
+        {/* Section: Address & Notes */}
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          Additional Details
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller name="address" control={control} render={({ field }) => <TextField {...field} label="Address" fullWidth />} />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="notes"
               control={control}
-              render={({ field }) => <TextField {...field} label="Notes" fullWidth multiline minRows={2} />}
+              render={({ field }) => <TextField {...field} label="Notes" fullWidth multiline minRows={3} />}
             />
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Stack direction="row" spacing={1}>
-          <Button onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit(onSubmit)} variant="contained" disabled={submitting}>
-            {submitting ? 'Saving...' : 'Save'}
-          </Button>
-        </Stack>
+
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={submitting} variant="outlined" color="inherit">
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit(onSubmit)} variant="contained" disabled={submitting}>
+          {submitting ? 'Saving...' : isEdit ? 'Update Driver' : 'Create Driver'}
+        </Button>
       </DialogActions>
     </Dialog>
   );

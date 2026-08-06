@@ -18,6 +18,7 @@ function toDomain(instance) {
     country: plain.country,
     status: plain.status,
     notes: plain.notes,
+    contactPersons: plain.contactPersons,
     createdBy: plain.createdBy,
     updatedBy: plain.updatedBy,
     createdAt: plain.createdAt,

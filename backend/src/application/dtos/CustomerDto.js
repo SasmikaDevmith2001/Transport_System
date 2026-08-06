@@ -12,6 +12,7 @@ function toCustomerResponseDto(customer) {
     country: customer.country,
     status: customer.status,
     notes: customer.notes,
+    contactPersons: customer.contactPersons || [],
     createdAt: customer.createdAt,
     updatedAt: customer.updatedAt,
   };
