@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const ICustomerRepository = require('../../../domain/repositories/ICustomerRepository');
 const Customer = require('../../../domain/entities/Customer');
-const { Customer: CustomerModel } = require('../sequelize/models');
+const { Customer: CustomerModel, Division: DivisionModel } = require('../sequelize/models');
 
 function toDomain(instance) {
   if (!instance) return null;
@@ -19,6 +19,8 @@ function toDomain(instance) {
     status: plain.status,
     notes: plain.notes,
     contactPersons: plain.contactPersons,
+    divisionId: plain.divisionId,
+    divisionName: plain.Division ? plain.Division.name : null,
     createdBy: plain.createdBy,
     updatedBy: plain.updatedBy,
     createdAt: plain.createdAt,
@@ -29,13 +31,13 @@ function toDomain(instance) {
 
 class CustomerRepository extends ICustomerRepository {
   async findById(id) {
-    const instance = await CustomerModel.findByPk(id);
+    const instance = await CustomerModel.findByPk(id, { include: [DivisionModel] });
     return toDomain(instance);
   }
 
   async create(data) {
     const instance = await CustomerModel.create(data);
-    return toDomain(instance);
+    return this.findById(instance.id);
   }
 
   async update(id, data) {
@@ -65,6 +67,7 @@ class CustomerRepository extends ICustomerRepository {
 
     const { rows, count } = await CustomerModel.findAndCountAll({
       where,
+      include: [DivisionModel],
       limit: pageSize,
       offset,
       order: [[sortBy, sortOrder]],

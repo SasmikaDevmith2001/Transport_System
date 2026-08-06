@@ -17,6 +17,7 @@ CustomerModel.init(
     status: { type: DataTypes.ENUM('active', 'inactive'), allowNull: false, defaultValue: 'active' },
     notes: { type: DataTypes.TEXT, allowNull: true },
     contactPersons: { type: DataTypes.JSON, allowNull: true, field: 'contact_persons' },
+    divisionId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true, field: 'division_id' },
     createdBy: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true, field: 'created_by' },
     updatedBy: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true, field: 'updated_by' },
   },

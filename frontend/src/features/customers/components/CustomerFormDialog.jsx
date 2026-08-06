@@ -19,6 +19,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import { useDivisions } from '../hooks/useCustomers';
 
 const contactPersonSchema = Joi.object({
   name: Joi.string().trim().min(1).max(100).required().messages({ 'string.empty': 'Name is required' }),
@@ -34,6 +35,7 @@ const customerSchema = Joi.object({
   city: Joi.string().trim().allow('').max(100),
   country: Joi.string().trim().max(100).default('Sri Lanka'),
   status: Joi.string().valid('active', 'inactive').required(),
+  divisionId: Joi.number().integer().positive().allow('', null),
   notes: Joi.string().trim().allow('').max(2000),
   contactPersons: Joi.array().items(contactPersonSchema).max(3),
 });
@@ -46,25 +48,27 @@ const DEFAULTS = {
   city: '',
   country: 'Sri Lanka',
   status: 'active',
+  divisionId: '',
   notes: '',
   contactPersons: [],
 };
 
 export default function CustomerFormDialog({ open, customer = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!customer;
+  const { data: divisions = [] } = useDivisions();
 
   const {
     control,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm({ resolver: joiResolver(customerSchema), defaultValues: DEFAULTS });
+  } = useForm({ resolver: joiResolver(customerSchema, { abortEarly: false, stripUnknown: true }), defaultValues: DEFAULTS });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'contactPersons' });
 
   useEffect(() => {
     if (open) {
-      reset(customer ? { ...DEFAULTS, ...customer, contactPersons: customer.contactPersons || [] } : DEFAULTS);
+      reset(customer ? { ...DEFAULTS, ...customer, divisionId: customer.divisionId || '', contactPersons: customer.contactPersons || [] } : DEFAULTS);
     }
   }, [open, customer, reset]);
 
@@ -128,6 +132,22 @@ export default function CustomerFormDialog({ open, customer = null, submitting =
                 <TextField {...field} select label="Status" fullWidth>
                   <MenuItem value="active">Active</MenuItem>
                   <MenuItem value="inactive">Inactive</MenuItem>
+                </TextField>
+              )}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="divisionId"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} select label="Division" fullWidth>
+                  <MenuItem value="">— None —</MenuItem>
+                  {divisions.map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {d.name}
+                    </MenuItem>
+                  ))}
                 </TextField>
               )}
             />
@@ -247,7 +267,15 @@ export default function CustomerFormDialog({ open, customer = null, submitting =
         <Button onClick={onClose} disabled={submitting} variant="outlined" color="inherit">
           Cancel
         </Button>
-        <Button onClick={handleSubmit(onSubmit)} variant="contained" disabled={submitting}>
+        <Button onClick={handleSubmit(
+          (values) => {
+            const payload = { ...values, divisionId: values.divisionId ? Number(values.divisionId) : null };
+            onSubmit(payload);
+          },
+          (validationErrors) => {
+            console.error('[FORM ERRORS]', validationErrors);
+          }
+        )} variant="contained" disabled={submitting}>
           {submitting ? 'Saving...' : isEdit ? 'Update Customer' : 'Create Customer'}
         </Button>
       </DialogActions>

@@ -9,6 +9,7 @@ function buildRouter(container) {
   router.use('/customers', require('./customer.routes')(container.customerController));
   router.use('/drivers', require('./driver.routes')(container.driverController));
   router.use('/trips', require('./trip.routes')(container.tripController));
+  router.use('/divisions', require('./division.routes')());
 
   return router;
 }

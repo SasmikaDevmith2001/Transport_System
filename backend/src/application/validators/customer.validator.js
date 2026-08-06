@@ -18,6 +18,7 @@ const createCustomerSchema = Joi.object({
   status: Joi.string().valid('active', 'inactive').default('active'),
   notes: Joi.string().trim().max(2000).allow(null, ''),
   contactPersons: Joi.array().items(contactPersonSchema).max(3).default([]),
+  divisionId: Joi.number().integer().positive().allow(null),
 });
 
 const updateCustomerSchema = Joi.object({
@@ -32,6 +33,7 @@ const updateCustomerSchema = Joi.object({
   status: Joi.string().valid('active', 'inactive'),
   notes: Joi.string().trim().max(2000).allow(null, ''),
   contactPersons: Joi.array().items(contactPersonSchema).max(3),
+  divisionId: Joi.number().integer().positive().allow(null),
 }).min(1);
 
 const listCustomersQuerySchema = Joi.object({
