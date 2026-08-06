@@ -9,6 +9,14 @@ export function useCustomersList(params) {
   });
 }
 
+export function useDivisions() {
+  return useQuery({
+    queryKey: ['divisions'],
+    queryFn: customersApi.listDivisions,
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({

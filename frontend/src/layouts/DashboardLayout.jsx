@@ -128,15 +128,23 @@ export default function DashboardLayout() {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }} elevation={0}>
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }} elevation={0} color="transparent">
         <Toolbar sx={{ gap: 1 }}>
           {!isDesktop && (
             <IconButton edge="start" onClick={() => setMobileOpen(true)}>
               <MenuIcon />
             </IconButton>
           )}
+          {isDesktop && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocalShippingRoundedIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+              <Typography variant="subtitle2" fontWeight={700} sx={{ color: 'text.primary' }} noWrap>
+                Anuradha Transport
+              </Typography>
+            </Box>
+          )}
           <Box sx={{ flexGrow: 1 }} />
-          <IconButton onClick={toggleMode} aria-label="Toggle dark mode">
+          <IconButton onClick={toggleMode} aria-label="Toggle dark mode" sx={{ color: 'text.primary' }}>
             {mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
           </IconButton>
           <Divider orientation="vertical" flexItem sx={{ mx: 1, my: 1.5 }} />
@@ -149,10 +157,10 @@ export default function DashboardLayout() {
             </Avatar>
             {isDesktop && (
               <Box sx={{ textAlign: 'left', lineHeight: 1.15 }}>
-                <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: 140 }}>
+                <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: 140, color: 'text.primary' }}>
                   {user?.fullName}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                   {ROLE_LABEL[user?.role] || user?.role}
                 </Typography>
               </Box>

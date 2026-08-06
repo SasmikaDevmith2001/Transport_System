@@ -4,14 +4,18 @@ import { joiResolver } from '@hookform/resolvers/joi';
 import Joi from 'joi';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
   TextField,
-  Stack,
   MenuItem,
+  Grid,
+  Typography,
+  IconButton,
+  Box,
+  Divider,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { useRoles } from '../hooks/useUsers';
 
 const baseSchema = {
@@ -34,12 +38,6 @@ const createSchema = Joi.object({
 
 const updateSchema = Joi.object(baseSchema);
 
-/**
- * Shared create/edit dialog for the Users module. Switches validation
- * schema and default values based on whether `user` (edit) is provided.
- * Role options are fetched from the backend rather than hardcoded, so the
- * frontend never has to know role IDs in advance.
- */
 export default function UserFormDialog({ open, user = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!user;
   const { data: roles = [] } = useRoles();
@@ -81,7 +79,6 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
 
   const submit = (values) => {
     if (isEdit) {
-      // eslint-disable-next-line no-unused-vars
       const { password, ...rest } = values;
       onSubmit(rest);
     } else {
@@ -90,11 +87,31 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isEdit ? 'Edit User' : 'Create User'}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Stack direction="row" spacing={2}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 1 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            {isEdit ? 'Edit User' : 'Create User'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isEdit ? 'Update user account details' : 'Set up a new user account'}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      <Divider sx={{ mx: 3, mt: 1 }} />
+
+      <DialogContent sx={{ px: 3, py: 3 }}>
+        {/* Section: Personal Info */}
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          Personal Information
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="firstName"
               control={control}
@@ -102,6 +119,8 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
                 <TextField {...field} label="First Name" fullWidth error={!!errors.firstName} helperText={errors.firstName?.message} />
               )}
             />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="lastName"
               control={control}
@@ -109,25 +128,34 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
                 <TextField {...field} label="Last Name" fullWidth error={!!errors.lastName} helperText={errors.lastName?.message} />
               )}
             />
-          </Stack>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Phone" fullWidth error={!!errors.phone} helperText={errors.phone?.message} />
+              )}
+            />
+          </Grid>
+        </Grid>
 
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} label="Email" fullWidth disabled={isEdit} error={!!errors.email} helperText={errors.email?.message} />
-            )}
-          />
-
-          <Controller
-            name="phone"
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} label="Phone" fullWidth error={!!errors.phone} helperText={errors.phone?.message} />
-            )}
-          />
-
-          <Stack direction="row" spacing={2}>
+        {/* Section: Account */}
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          Account Settings
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Email" fullWidth disabled={isEdit} error={!!errors.email} helperText={errors.email?.message} />
+              )}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="roleId"
               control={control}
@@ -141,6 +169,8 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
                 </TextField>
               )}
             />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="status"
               control={control}
@@ -152,25 +182,28 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
                 </TextField>
               )}
             />
-          </Stack>
-
+          </Grid>
           {!isEdit && (
-            <Controller
-              name="password"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} type="password" label="Password" fullWidth error={!!errors.password} helperText={errors.password?.message} />
-              )}
-            />
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} type="password" label="Password" fullWidth error={!!errors.password} helperText={errors.password?.message} />
+                )}
+              />
+            </Grid>
           )}
-        </Stack>
+        </Grid>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
+
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={submitting} variant="outlined" color="inherit">
           Cancel
         </Button>
         <Button onClick={handleSubmit(submit)} variant="contained" disabled={submitting}>
-          {submitting ? 'Saving...' : 'Save'}
+          {submitting ? 'Saving...' : isEdit ? 'Update User' : 'Create User'}
         </Button>
       </DialogActions>
     </Dialog>
