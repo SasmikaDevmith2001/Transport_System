@@ -1,4 +1,11 @@
 import { createTheme } from '@mui/material/styles';
+import { forwardRef } from 'react';
+
+// No-op transition to disable dialog animations
+const NoTransition = forwardRef(function NoTransition({ children, in: inProp }, ref) {
+  return inProp ? children : null;
+});
+
 
 /**
  * Navy Blue & White design system for an enterprise logistics dashboard.
@@ -107,7 +114,7 @@ export function buildTheme(mode) {
         },
       },
       MuiTextField: {
-        defaultProps: { size: 'small' },
+        defaultProps: { size: 'medium' },
       },
       MuiOutlinedInput: {
         styleOverrides: {
@@ -136,6 +143,48 @@ export function buildTheme(mode) {
             borderRadius: 6,
             marginInline: 8,
             marginBottom: 2,
+          },
+        },
+      },
+      MuiDialog: {
+        defaultProps: {
+          TransitionComponent: NoTransition,
+          transitionDuration: 0,
+        },
+        styleOverrides: {
+          paper: {
+            borderRadius: 14,
+            border: `1px solid ${isDark ? 'rgba(148,163,184,0.10)' : 'rgba(15,23,42,0.07)'}`,
+          },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: {
+            fontWeight: 700,
+            fontSize: '1.25rem',
+            paddingBottom: 8,
+          },
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          root: {
+            paddingTop: '12px !important',
+          },
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: {
+            padding: '16px 24px',
+          },
+        },
+      },
+      MuiBackdrop: {
+        styleOverrides: {
+          root: {
+            transition: 'none !important',
           },
         },
       },

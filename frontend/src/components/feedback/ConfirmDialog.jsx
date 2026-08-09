@@ -1,4 +1,15 @@
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import {
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  IconButton,
+  Box,
+  Divider,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 /**
  * Reusable confirmation dialog for destructive actions (delete, etc).
@@ -15,13 +26,31 @@ export default function ConfirmDialog({
   onClose,
 }) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
-        <DialogContentText>{message}</DialogContentText>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <WarningAmberIcon color="warning" />
+          <Typography variant="h6" fontWeight={700}>
+            {title}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      <Divider sx={{ mx: 3, mt: 1 }} />
+
+      <DialogContent sx={{ px: 3, py: 3 }}>
+        <Typography variant="body1" color="text.secondary">
+          {message}
+        </Typography>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={loading} variant="outlined" color="inherit">
           {cancelLabel}
         </Button>
         <Button onClick={onConfirm} color={confirmColor} variant="contained" disabled={loading}>

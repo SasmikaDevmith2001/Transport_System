@@ -6,6 +6,7 @@ const User = require('./User.model');
 const RefreshToken = require('./RefreshToken.model');
 const AuditLog = require('./AuditLog.model');
 const Customer = require('./Customer.model');
+const Division = require('./Division.model');
 const Driver = require('./Driver.model');
 const Trip = require('./Trip.model');
 const TripStop = require('./TripStop.model');
@@ -29,6 +30,9 @@ Driver.belongsTo(User, { foreignKey: 'userId' });
 Customer.hasMany(Trip, { foreignKey: 'customerId' });
 Trip.belongsTo(Customer, { foreignKey: 'customerId' });
 
+Division.hasMany(Customer, { foreignKey: 'divisionId' });
+Customer.belongsTo(Division, { foreignKey: 'divisionId' });
+
 Driver.hasMany(Trip, { foreignKey: 'driverId' });
 Trip.belongsTo(Driver, { foreignKey: 'driverId' });
 
@@ -44,6 +48,7 @@ module.exports = {
   RefreshToken,
   AuditLog,
   Customer,
+  Division,
   Driver,
   Trip,
   TripStop,
