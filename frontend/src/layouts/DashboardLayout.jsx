@@ -24,6 +24,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import BusinessIcon from '@mui/icons-material/Business';
 import BadgeIcon from '@mui/icons-material/Badge';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -41,6 +42,7 @@ const ICONS = {
   LocalShipping: LocalShippingIcon,
   Business: BusinessIcon,
   Badge: BadgeIcon,
+  FactCheck: FactCheckIcon,
 };
 
 const ROLE_LABEL = {

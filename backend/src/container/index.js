@@ -55,7 +55,10 @@ const ListTripsUseCase = require('../application/use-cases/trips/ListTripsUseCas
 const UpdateTripUseCase = require('../application/use-cases/trips/UpdateTripUseCase');
 const AssignTripUseCase = require('../application/use-cases/trips/AssignTripUseCase');
 const UpdateTripStatusUseCase = require('../application/use-cases/trips/UpdateTripStatusUseCase');
+const UpdateTripDriverDetailsUseCase = require('../application/use-cases/trips/UpdateTripDriverDetailsUseCase');
 const DeleteTripUseCase = require('../application/use-cases/trips/DeleteTripUseCase');
+const ApproveTripUseCase = require('../application/use-cases/trips/ApproveTripUseCase');
+const ListPendingApprovalsUseCase = require('../application/use-cases/trips/ListPendingApprovalsUseCase');
 
 // Presentation controllers
 const AuthController = require('../presentation/controllers/auth.controller');
@@ -96,7 +99,10 @@ const listTripsUseCase = new ListTripsUseCase(tripRepository, driverRepository);
 const updateTripUseCase = new UpdateTripUseCase(tripRepository, logger);
 const assignTripUseCase = new AssignTripUseCase(tripRepository, driverRepository, logger);
 const updateTripStatusUseCase = new UpdateTripStatusUseCase(tripRepository, driverRepository, logger);
+const updateTripDriverDetailsUseCase = new UpdateTripDriverDetailsUseCase(tripRepository, driverRepository, logger);
 const deleteTripUseCase = new DeleteTripUseCase(tripRepository, logger);
+const approveTripUseCase = new ApproveTripUseCase(tripRepository, logger);
+const listPendingApprovalsUseCase = new ListPendingApprovalsUseCase(tripRepository);
 
 // --- Wire controllers ---
 const authController = new AuthController({ loginUseCase, refreshTokenUseCase, logoutUseCase, getUserUseCase });
@@ -122,6 +128,8 @@ const driverController = new DriverController({
   listActiveDriversUseCase,
   updateDriverUseCase,
   deleteDriverUseCase,
+  userRepository,
+  driverRepository,
 });
 const tripController = new TripController({
   createTripUseCase,
@@ -130,7 +138,10 @@ const tripController = new TripController({
   updateTripUseCase,
   assignTripUseCase,
   updateTripStatusUseCase,
+  updateTripDriverDetailsUseCase,
   deleteTripUseCase,
+  approveTripUseCase,
+  listPendingApprovalsUseCase,
 });
 
 module.exports = {

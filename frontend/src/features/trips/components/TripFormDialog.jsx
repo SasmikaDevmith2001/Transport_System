@@ -23,13 +23,12 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import PersonIcon from '@mui/icons-material/Person';
 import RouteIcon from '@mui/icons-material/Route';
 import NotesIcon from '@mui/icons-material/Notes';
 import { useCustomersList } from '../../customers/hooks/useCustomers';
 
 const stopSchema = Joi.object({
-  locationName: Joi.string().trim().min(1).max(255).required(),
+  locationName: Joi.string().trim().min(1).max(255).required().messages({ 'string.empty': 'Location is required' }),
   contactName: Joi.string().trim().allow('').max(100),
   contactPhone: Joi.string().trim().allow('').max(20),
 });
@@ -37,23 +36,21 @@ const stopSchema = Joi.object({
 const tripSchema = Joi.object({
   customerId: Joi.number().integer().positive().required().messages({ 'any.required': 'Customer is required' }),
   origin: Joi.string().trim().min(1).max(255).required(),
-  destination: Joi.string().trim().min(1).max(255).required(),
   scheduledDate: Joi.string().required().messages({ 'string.empty': 'Scheduled date is required' }),
   scheduledTime: Joi.string().trim().allow(''),
   cargoDescription: Joi.string().trim().allow('').max(255),
   remarks: Joi.string().trim().allow('').max(2000),
-  stops: Joi.array().items(stopSchema),
+  stops: Joi.array().items(stopSchema).min(1).required().messages({ 'array.min': 'Add at least one destination location' }),
 });
 
 const DEFAULTS = {
   customerId: '',
   origin: '',
-  destination: '',
   scheduledDate: '',
   scheduledTime: '',
   cargoDescription: '',
   remarks: '',
-  stops: [],
+  stops: [{ locationName: '', contactName: '', contactPhone: '' }],
 };
 
 export default function TripFormDialog({ open, trip = null, submitting = false, onSubmit, onClose }) {
@@ -79,7 +76,6 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
           ? {
               customerId: trip.customerId,
               origin: trip.origin,
-              destination: trip.destination,
               scheduledDate: trip.scheduledDate,
               scheduledTime: trip.scheduledTime?.slice(0, 5) || '',
               cargoDescription: trip.cargoDescription || '',
@@ -94,6 +90,16 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
       );
     }
   }, [open, trip, reset]);
+
+  const handleFormSubmit = (values) => {
+    // The last stop's location becomes the destination for the trip record
+    const lastStop = values.stops[values.stops.length - 1];
+    const payload = {
+      ...values,
+      destination: lastStop.locationName,
+    };
+    onSubmit(payload);
+  };
 
   const SectionHeader = ({ icon: Icon, title, subtitle }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
@@ -167,36 +173,19 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Controller
                 name="origin"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Origin"
+                    label="Starting Point (Origin)"
                     fullWidth
                     size="small"
                     error={!!errors.origin}
                     helperText={errors.origin?.message}
-                    placeholder="Pickup location"
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="destination"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Destination"
-                    fullWidth
-                    size="small"
-                    error={!!errors.destination}
-                    helperText={errors.destination?.message}
-                    placeholder="Dropoff location"
+                    placeholder="Where the trip starts from"
                   />
                 )}
               />
@@ -240,7 +229,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
           </Grid>
         </Paper>
 
-        {/* Section: Delivery Stops */}
+        {/* Section: Route Locations */}
         <Paper elevation={0} sx={{ p: 2.5, mb: 3, bgcolor: 'action.hover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -260,10 +249,10 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
               </Box>
               <Box>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 0.5 }}>
-                  Delivery Stops
+                  Route Locations
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Optional intermediate stops
+                  Add locations in order. The last location is the final destination.
                 </Typography>
               </Box>
             </Box>
@@ -272,23 +261,41 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
             </Button>
           </Box>
 
+          {errors.stops?.message && (
+            <Typography variant="caption" color="error" sx={{ mb: 1.5, display: 'block' }}>
+              {errors.stops.message}
+            </Typography>
+          )}
+
           <Stack spacing={2}>
             {fields.map((item, index) => (
               <Box key={item.id} sx={{ p: 2, borderRadius: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
                   <Typography variant="caption" fontWeight={700} color="text.secondary">
-                    Stop #{index + 1}
+                    {index === fields.length - 1 ? `Location #${index + 1} (Final Destination)` : `Location #${index + 1}`}
                   </Typography>
-                  <IconButton size="small" onClick={() => remove(index)} color="error">
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
+                  {fields.length > 1 && (
+                    <IconButton size="small" onClick={() => remove(index)} color="error">
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  )}
                 </Stack>
                 <Grid container spacing={1.5}>
                   <Grid item xs={12}>
                     <Controller
                       name={`stops.${index}.locationName`}
                       control={control}
-                      render={({ field }) => <TextField {...field} label="Location" fullWidth size="small" />}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Location"
+                          fullWidth
+                          size="small"
+                          error={!!errors.stops?.[index]?.locationName}
+                          helperText={errors.stops?.[index]?.locationName?.message}
+                          placeholder={index === fields.length - 1 ? 'Final destination' : 'Delivery location'}
+                        />
+                      )}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -308,13 +315,6 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                 </Grid>
               </Box>
             ))}
-            {fields.length === 0 && (
-              <Box sx={{ py: 3, textAlign: 'center', borderRadius: 1.5, border: '1px dashed', borderColor: 'divider' }}>
-                <Typography variant="body2" color="text.secondary">
-                  No stops added. Trip will go directly from origin to destination.
-                </Typography>
-              </Box>
-            )}
           </Stack>
         </Paper>
 
@@ -334,7 +334,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
         <Button onClick={onClose} disabled={submitting} variant="outlined" fullWidth={isMobile}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit(onSubmit)} variant="contained" disabled={submitting} fullWidth={isMobile}>
+        <Button onClick={handleSubmit(handleFormSubmit)} variant="contained" disabled={submitting} fullWidth={isMobile}>
           {submitting ? 'Saving...' : isEdit ? 'Update Trip' : 'Create Trip'}
         </Button>
       </DialogActions>

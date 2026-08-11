@@ -19,6 +19,7 @@ import {
   useUpdateTrip,
   useAssignTrip,
   useUpdateTripStatus,
+  useUpdateTripDriverDetails,
   useDeleteTrip,
 } from '../hooks/useTrips';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -58,6 +59,7 @@ export default function TripsListPage() {
   const updateTrip = useUpdateTrip();
   const assignTrip = useAssignTrip();
   const updateStatus = useUpdateTripStatus();
+  const updateDriverDetails = useUpdateTripDriverDetails();
   const deleteTrip = useDeleteTrip();
 
   const columns = [
@@ -157,13 +159,23 @@ export default function TripsListPage() {
     }
   };
 
-  const handleAdvanceStatus = async (nextStatus) => {
+  const handleAdvanceStatus = async (nextStatus, gps) => {
     try {
-      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus });
+      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus, gps: gps || {} });
       enqueueSnackbar('Trip status updated', { variant: 'success' });
       setViewingTrip(updated);
     } catch (err) {
       enqueueSnackbar(err.response?.data?.message || 'Failed to update trip status', { variant: 'error' });
+    }
+  };
+
+  const handleUpdateDriverDetails = async (stopId, payload) => {
+    try {
+      const updated = await updateDriverDetails.mutateAsync({ tripId: viewingTrip.id, stopId, payload });
+      enqueueSnackbar('Stop details saved', { variant: 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to save stop details', { variant: 'error' });
     }
   };
 
@@ -259,8 +271,11 @@ export default function TripsListPage() {
         trip={viewingTrip}
         onClose={() => setViewingTrip(null)}
         onAdvanceStatus={handleAdvanceStatus}
+        onUpdateStopDetails={handleUpdateDriverDetails}
         canAdvance={hasPermission('trips:update') || isDriver}
+        canEditStops={isDriver || hasPermission('trips:update')}
         advancing={updateStatus.isPending}
+        savingStop={updateDriverDetails.isPending}
       />
 
       <ConfirmDialog

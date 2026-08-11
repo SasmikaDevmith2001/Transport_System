@@ -8,14 +8,25 @@ const {
   updateTripSchema,
   assignTripSchema,
   updateTripStatusSchema,
+  updateTripDriverDetailsSchema,
+  approveTripSchema,
   listTripsQuerySchema,
   idParamSchema,
+  stopIdParamSchema,
 } = require('../../application/validators/trip.validator');
 
 module.exports = (tripController) => {
   const router = Router();
 
   router.use(authenticate);
+
+  // Pending approvals list - must be before /:id to avoid param matching
+  router.get(
+    '/pending-approval',
+    authorizePermissions('trips:update'),
+    validate(listTripsQuerySchema, 'query'),
+    asyncHandler(tripController.listPendingApproval)
+  );
 
   // Drivers have `trips:read` and use these same endpoints - scoping to
   // "assigned to me" is enforced in ListTripsUseCase/GetTripUseCase, not here.
@@ -64,6 +75,24 @@ module.exports = (tripController) => {
     validate(idParamSchema, 'params'),
     validate(updateTripStatusSchema),
     asyncHandler(tripController.updateStatus)
+  );
+
+  // Driver details (mileage, invoice number) per stop
+  router.patch(
+    '/:id/stops/:stopId',
+    authorizePermissions('trips:update', 'trips:read'),
+    validate(stopIdParamSchema, 'params'),
+    validate(updateTripDriverDetailsSchema),
+    asyncHandler(tripController.updateDriverDetails)
+  );
+
+  // Trip approval / rejection by admin
+  router.patch(
+    '/:id/approve',
+    authorizePermissions('trips:update'),
+    validate(idParamSchema, 'params'),
+    validate(approveTripSchema),
+    asyncHandler(tripController.approve)
   );
 
   router.delete(

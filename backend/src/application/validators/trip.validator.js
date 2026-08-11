@@ -42,6 +42,29 @@ const assignTripSchema = Joi.object({
 
 const updateTripStatusSchema = Joi.object({
   status: Joi.string().valid('pending', 'assigned', 'in_progress', 'completed', 'cancelled').required(),
+  latitude: Joi.number().min(-90).max(90).allow(null),
+  longitude: Joi.number().min(-180).max(180).allow(null),
+});
+
+const updateTripDriverDetailsSchema = Joi.object({
+  driverMileage: Joi.number().min(0).precision(2).allow(null),
+  invoices: Joi.array().items(Joi.string().trim().min(1).max(100)).allow(null),
+  invoiceNumber: Joi.string().trim().max(100).allow(null, ''),
+  status: Joi.string().valid('arrived', 'delivered', 'skipped').allow(null),
+  latitude: Joi.number().min(-90).max(90).allow(null),
+  longitude: Joi.number().min(-180).max(180).allow(null),
+  gpsLocationName: Joi.string().trim().max(255).allow(null, ''),
+  gpsMileage: Joi.number().min(0).precision(2).allow(null),
+}).min(1);
+
+const approveTripSchema = Joi.object({
+  approved: Joi.boolean().required(),
+  rejectionReason: Joi.string().trim().max(2000).allow(null, ''),
+});
+
+const stopIdParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required(),
+  stopId: Joi.number().integer().positive().required(),
 });
 
 const listTripsQuerySchema = Joi.object({
@@ -66,6 +89,9 @@ module.exports = {
   updateTripSchema,
   assignTripSchema,
   updateTripStatusSchema,
+  updateTripDriverDetailsSchema,
+  approveTripSchema,
   listTripsQuerySchema,
   idParamSchema,
+  stopIdParamSchema,
 };

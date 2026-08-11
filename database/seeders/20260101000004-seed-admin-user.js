@@ -1,7 +1,5 @@
 'use strict';
 
-const bcrypt = require('bcryptjs');
-
 module.exports = {
   async up(queryInterface, Sequelize) {
     const [superAdminRole] = await queryInterface.sequelize.query(
@@ -9,7 +7,6 @@ module.exports = {
       { type: Sequelize.QueryTypes.SELECT }
     );
 
-    const passwordHash = await bcrypt.hash('ChangeMe@123', 10);
     const now = new Date();
 
     await queryInterface.bulkInsert('users', [
@@ -19,7 +16,7 @@ module.exports = {
         last_name: 'Administrator',
         email: 'admin@anuradhatransport.lk',
         phone: null,
-        password_hash: passwordHash,
+        password_hash: 'ChangeMe@123',
         status: 'active',
         created_at: now,
         updated_at: now,
