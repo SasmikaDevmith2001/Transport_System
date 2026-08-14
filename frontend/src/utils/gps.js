@@ -1,9 +1,15 @@
 /**
  * Get the current GPS position from the browser's Geolocation API.
- * Returns { latitude, longitude } or null if unavailable/denied.
+ * In development, checks for window.__GPS_OVERRIDE first (set by the dev panel).
  */
 export function getCurrentPosition() {
   return new Promise((resolve) => {
+    // Dev override
+    if (window.__GPS_OVERRIDE) {
+      resolve({ ...window.__GPS_OVERRIDE });
+      return;
+    }
+
     if (!navigator.geolocation) {
       resolve(null);
       return;
@@ -17,7 +23,6 @@ export function getCurrentPosition() {
         });
       },
       () => {
-        // Permission denied or error — resolve null instead of rejecting
         resolve(null);
       },
       {
@@ -31,6 +36,7 @@ export function getCurrentPosition() {
 
 /**
  * Calculate straight-line distance in km between two GPS points (Haversine formula).
+ * Used as fallback if Google API fails.
  */
 export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -45,47 +51,49 @@ export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Get real driving distance in km between two points using OSRM (free, no API key).
- * Falls back to Haversine if the request fails.
+ * Get real driving distance in km using Google Distance Matrix Service.
+ * Falls back to Haversine if Google is not loaded.
  */
 export async function getDrivingDistanceKm(lat1, lon1, lat2, lon2) {
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.code === 'Ok' && data.routes?.length > 0) {
-      // OSRM returns distance in meters
-      return Math.round((data.routes[0].distance / 1000) * 100) / 100;
+  // Use Google Distance Matrix if available
+  if (window.google?.maps?.DistanceMatrixService) {
+    try {
+      const service = new window.google.maps.DistanceMatrixService();
+      const result = await service.getDistanceMatrix({
+        origins: [{ lat: lat1, lng: lon1 }],
+        destinations: [{ lat: lat2, lng: lon2 }],
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      });
+      if (result.rows[0]?.elements[0]?.status === 'OK') {
+        return Math.round((result.rows[0].elements[0].distance.value / 1000) * 100) / 100;
+      }
+    } catch {
+      // fallback
     }
-  } catch {
-    // fallback to straight line
   }
+
+  // Fallback to straight-line distance
   return calculateDistanceKm(lat1, lon1, lat2, lon2);
 }
 
 /**
- * Reverse geocode coordinates to a place name using Nominatim (free, no API key).
- * Returns a location string or null.
+ * Reverse geocode coordinates to a place name using Google Geocoding API.
  */
 export async function reverseGeocode(latitude, longitude) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`;
-    const response = await fetch(url, {
-      headers: { 'Accept-Language': 'en' },
-    });
-    const data = await response.json();
-    if (data?.display_name) {
-      // Return a shorter version — suburb/town + district
-      const addr = data.address || {};
-      const parts = [
-        addr.suburb || addr.village || addr.town || addr.city_district,
-        addr.city || addr.county || addr.state_district,
-        addr.state,
-      ].filter(Boolean);
-      return parts.length > 0 ? parts.join(', ') : data.display_name.split(',').slice(0, 3).join(',');
+    const geocoder = new window.google.maps.Geocoder();
+    const result = await geocoder.geocode({ location: { lat: latitude, lng: longitude } });
+    if (result.results?.length > 0) {
+      // Get a shorter address (locality + admin area)
+      const components = result.results[0].address_components;
+      const locality = components.find((c) => c.types.includes('locality') || c.types.includes('sublocality'));
+      const district = components.find((c) => c.types.includes('administrative_area_level_2'));
+      const province = components.find((c) => c.types.includes('administrative_area_level_1'));
+      const parts = [locality?.long_name, district?.long_name, province?.long_name].filter(Boolean);
+      return parts.length > 0 ? parts.join(', ') : result.results[0].formatted_address;
     }
   } catch {
-    // silently fail
+    // silent
   }
   return null;
 }

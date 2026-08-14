@@ -7,6 +7,7 @@ TripStopModel.init(
   {
     id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
     tripId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, field: 'trip_id' },
+    locationId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true, field: 'location_id' },
     sequenceNo: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, field: 'sequence_no' },
     locationName: { type: DataTypes.STRING(255), allowNull: false, field: 'location_name' },
     address: { type: DataTypes.STRING(255), allowNull: true },
@@ -25,6 +26,7 @@ TripStopModel.init(
     gpsLocationName: { type: DataTypes.STRING(255), allowNull: true, field: 'gps_location_name' },
     gpsMileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'gps_mileage' },
     driverMileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'driver_mileage' },
+    expectedMileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'expected_mileage' },
     arrivedAt: { type: DataTypes.DATE, allowNull: true, field: 'arrived_at' },
     deliveredAt: { type: DataTypes.DATE, allowNull: true, field: 'delivered_at' },
   },

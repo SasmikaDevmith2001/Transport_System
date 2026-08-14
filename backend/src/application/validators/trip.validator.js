@@ -1,6 +1,7 @@
 const Joi = require('joi');
 
 const tripStopSchema = Joi.object({
+  locationId: Joi.number().integer().positive().allow(null),
   locationName: Joi.string().trim().min(1).max(255).required(),
   address: Joi.string().trim().max(255).allow(null, ''),
   contactName: Joi.string().trim().max(100).allow(null, ''),
@@ -70,7 +71,7 @@ const stopIdParamSchema = Joi.object({
 const listTripsQuerySchema = Joi.object({
   page: Joi.number().integer().min(1),
   pageSize: Joi.number().integer().min(1).max(100),
-  sortBy: Joi.string().valid('scheduledDate', 'createdAt', 'status', 'tripNumber'),
+  sortBy: Joi.string().valid('scheduledDate', 'createdAt', 'completedAt', 'status', 'tripNumber'),
   sortOrder: Joi.string().valid('asc', 'desc', 'ASC', 'DESC'),
   search: Joi.string().trim().allow(''),
   status: Joi.string().valid('pending', 'assigned', 'in_progress', 'completed', 'cancelled'),

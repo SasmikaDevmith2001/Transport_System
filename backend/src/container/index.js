@@ -14,6 +14,7 @@ const refreshTokenRepository = require('../infrastructure/database/repositories/
 const customerRepository = require('../infrastructure/database/repositories/CustomerRepository');
 const driverRepository = require('../infrastructure/database/repositories/DriverRepository');
 const tripRepository = require('../infrastructure/database/repositories/TripRepository');
+const locationRepository = require('../infrastructure/database/repositories/LocationRepository');
 const hasher = require('../infrastructure/auth/BcryptHasher');
 const tokenService = require('../infrastructure/auth/JwtTokenService');
 const logger = require('../infrastructure/logging/WinstonLogger');
@@ -67,6 +68,7 @@ const RoleController = require('../presentation/controllers/role.controller');
 const CustomerController = require('../presentation/controllers/customer.controller');
 const DriverController = require('../presentation/controllers/driver.controller');
 const TripController = require('../presentation/controllers/trip.controller');
+const LocationController = require('../presentation/controllers/location.controller');
 
 // --- Wire use cases ---
 const loginUseCase = new LoginUseCase(userRepository, roleRepository, refreshTokenRepository, hasher, tokenService, logger);
@@ -93,7 +95,7 @@ const listActiveDriversUseCase = new ListActiveDriversUseCase(driverRepository);
 const updateDriverUseCase = new UpdateDriverUseCase(driverRepository, logger);
 const deleteDriverUseCase = new DeleteDriverUseCase(driverRepository, logger);
 
-const createTripUseCase = new CreateTripUseCase(tripRepository, customerRepository, driverRepository, logger);
+const createTripUseCase = new CreateTripUseCase(tripRepository, customerRepository, driverRepository, locationRepository, logger);
 const getTripUseCase = new GetTripUseCase(tripRepository, driverRepository);
 const listTripsUseCase = new ListTripsUseCase(tripRepository, driverRepository);
 const updateTripUseCase = new UpdateTripUseCase(tripRepository, logger);
@@ -144,6 +146,8 @@ const tripController = new TripController({
   listPendingApprovalsUseCase,
 });
 
+const locationController = new LocationController({ locationRepository });
+
 module.exports = {
   authController,
   userController,
@@ -151,5 +155,6 @@ module.exports = {
   customerController,
   driverController,
   tripController,
+  locationController,
   logger,
 };

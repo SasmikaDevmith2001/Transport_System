@@ -274,6 +274,7 @@ export default function TripsListPage() {
         onUpdateStopDetails={handleUpdateDriverDetails}
         canAdvance={hasPermission('trips:update') || isDriver}
         canEditStops={isDriver || hasPermission('trips:update')}
+        isDriver={isDriver}
         advancing={updateStatus.isPending}
         savingStop={updateDriverDetails.isPending}
       />

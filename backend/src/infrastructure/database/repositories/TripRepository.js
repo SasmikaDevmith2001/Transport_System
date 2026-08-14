@@ -17,6 +17,7 @@ function stopToDomain(instance) {
   return new TripStop({
     id: plain.id,
     tripId: plain.tripId,
+    locationId: plain.locationId,
     sequenceNo: plain.sequenceNo,
     locationName: plain.locationName,
     address: plain.address,
@@ -31,6 +32,7 @@ function stopToDomain(instance) {
     gpsLocationName: plain.gpsLocationName,
     gpsMileage: plain.gpsMileage ? parseFloat(plain.gpsMileage) : null,
     driverMileage: plain.driverMileage ? parseFloat(plain.driverMileage) : null,
+    expectedMileage: plain.expectedMileage ? parseFloat(plain.expectedMileage) : null,
     arrivedAt: plain.arrivedAt,
     deliveredAt: plain.deliveredAt,
     createdAt: plain.createdAt,

@@ -1,6 +1,7 @@
 function toTripStopResponseDto(stop) {
   return {
     id: stop.id,
+    locationId: stop.locationId,
     sequenceNo: stop.sequenceNo,
     locationName: stop.locationName,
     address: stop.address,
@@ -11,6 +12,7 @@ function toTripStopResponseDto(stop) {
     mileage: stop.mileage,
     invoiceNumber: stop.invoiceNumber,
     driverMileage: stop.driverMileage,
+    expectedMileage: stop.expectedMileage,
     latitude: stop.latitude,
     longitude: stop.longitude,
     gpsLocationName: stop.gpsLocationName,

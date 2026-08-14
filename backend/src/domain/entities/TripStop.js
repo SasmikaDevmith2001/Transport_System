@@ -2,6 +2,7 @@ class TripStop {
   constructor({
     id,
     tripId,
+    locationId,
     sequenceNo,
     locationName,
     address,
@@ -16,6 +17,7 @@ class TripStop {
     gpsLocationName,
     gpsMileage,
     driverMileage,
+    expectedMileage,
     arrivedAt,
     deliveredAt,
     createdAt,
@@ -24,6 +26,7 @@ class TripStop {
   }) {
     this.id = id;
     this.tripId = tripId;
+    this.locationId = locationId;
     this.sequenceNo = sequenceNo;
     this.locationName = locationName;
     this.address = address;
@@ -38,6 +41,7 @@ class TripStop {
     this.gpsLocationName = gpsLocationName;
     this.gpsMileage = gpsMileage;
     this.driverMileage = driverMileage;
+    this.expectedMileage = expectedMileage;
     this.arrivedAt = arrivedAt;
     this.deliveredAt = deliveredAt;
     this.createdAt = createdAt;

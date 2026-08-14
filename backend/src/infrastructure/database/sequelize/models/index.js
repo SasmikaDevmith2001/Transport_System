@@ -11,6 +11,7 @@ const Driver = require('./Driver.model');
 const Trip = require('./Trip.model');
 const TripStop = require('./TripStop.model');
 const TripStopInvoice = require('./TripStopInvoice.model');
+const Location = require('./Location.model');
 
 // Associations
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'roleId', otherKey: 'permissionId' });
@@ -43,6 +44,9 @@ TripStop.belongsTo(Trip, { foreignKey: 'tripId' });
 TripStop.hasMany(TripStopInvoice, { foreignKey: 'tripStopId', as: 'Invoices' });
 TripStopInvoice.belongsTo(TripStop, { foreignKey: 'tripStopId' });
 
+Customer.hasMany(Location, { foreignKey: 'customerId' });
+Location.belongsTo(Customer, { foreignKey: 'customerId' });
+
 module.exports = {
   sequelize,
   Role,
@@ -57,4 +61,5 @@ module.exports = {
   Trip,
   TripStop,
   TripStopInvoice,
+  Location,
 };

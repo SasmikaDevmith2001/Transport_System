@@ -25,6 +25,7 @@ import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircle';
 import { getCurrentPosition, getDrivingDistanceKm, reverseGeocode } from '../../../utils/gps';
+import RouteOptimizationDialog from './RouteOptimizationDialog';
 
 const TRIP_STATUS_COLORS = {
   pending: 'default',
@@ -54,12 +55,14 @@ export default function TripDetailDrawer({
   onUpdateStopDetails,
   canAdvance = false,
   canEditStops = false,
+  isDriver = false,
   advancing = false,
   savingStop = false,
 }) {
   const [expandedStop, setExpandedStop] = useState(null);
   const [stopEdits, setStopEdits] = useState({});
   const [gettingGps, setGettingGps] = useState(false);
+  const [showRouteDialog, setShowRouteDialog] = useState(false);
 
   useEffect(() => {
     if (trip) {
@@ -172,11 +175,20 @@ export default function TripDetailDrawer({
       gpsMileage,
     };
     onUpdateStopDetails(stop.id, payload);
+
+    // Show route dialog for next stop automatically
+    const stops = trip.stops || [];
+    const currentIndex = stops.findIndex((s) => s.id === stop.id);
+    const nextStop = stops[currentIndex + 1];
+    if (nextStop) {
+      // Small delay to let the UI update, then show route dialog
+      setTimeout(() => setShowRouteDialog(true), 500);
+    }
   };
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose}>
-      <Box sx={{ width: { xs: '100vw', sm: 440 }, p: 3 }}>
+    <Drawer anchor="right" open={open} onClose={onClose} sx={{ zIndex: (theme) => theme.zIndex.appBar - 1 }}>
+      <Box sx={{ width: { xs: '100vw', sm: 440 }, p: 3, pt: 10 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
           <Box>
             <Typography variant="h6" fontWeight={700}>
@@ -302,6 +314,11 @@ export default function TripDetailDrawer({
                                 {stop.contactName} {stop.contactPhone ? `• ${stop.contactPhone}` : ''}
                               </Typography>
                             )}
+                            {!isDriver && stop.expectedMileage != null && (
+                              <Typography variant="caption" color="info.main" fontWeight={600}>
+                                Expected: {stop.expectedMileage} km
+                              </Typography>
+                            )}
                           </Box>
                         </Stack>
                         <Stack direction="row" spacing={0.5} alignItems="center">
@@ -317,11 +334,19 @@ export default function TripDetailDrawer({
 
                       <Collapse in={isExpanded && !isLockedFuture}>
                         <Stack spacing={1.5} sx={{ mt: 2 }}>
+                          {/* Expected mileage from saved locations */}
+                          {!isDriver && stop.expectedMileage != null && (
+                            <Stack direction="row" spacing={1} alignItems="center" sx={{ px: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary">Map Distance:</Typography>
+                              <Chip size="small" label={`${stop.expectedMileage} km`} color="info" variant="outlined" sx={{ height: 20, fontSize: 11 }} />
+                            </Stack>
+                          )}
+
                           {/* Show GPS verification data for delivered stops */}
                           {isDelivered && (
                             <Paper elevation={0} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
                               <Stack spacing={0.5}>
-                                {stop.gpsMileage != null && (
+                                {!isDriver && stop.gpsMileage != null && (
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>GPS Distance:</Typography>
                                     <Typography variant="body2" fontWeight={700}>{stop.gpsMileage} km</Typography>
@@ -334,19 +359,10 @@ export default function TripDetailDrawer({
                                     <Typography variant="body2" fontWeight={700}>{stop.driverMileage} km</Typography>
                                   </Stack>
                                 )}
-                                {stop.gpsLocationName && (
+                                {!isDriver && stop.gpsLocationName && (
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Location:</Typography>
                                     <Typography variant="body2">{stop.gpsLocationName}</Typography>
-                                  </Stack>
-                                )}
-                                {stop.latitude && stop.longitude && (
-                                  <Stack direction="row" spacing={1} alignItems="center">
-                                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Coordinates:</Typography>
-                                    <Stack direction="row" spacing={0.5} alignItems="center">
-                                      <GpsFixedIcon sx={{ fontSize: 14 }} color="success" />
-                                      <Typography variant="caption">{stop.latitude.toFixed(5)}, {stop.longitude.toFixed(5)}</Typography>
-                                    </Stack>
                                   </Stack>
                                 )}
                                 {stop.invoices?.length > 0 && (
@@ -366,6 +382,18 @@ export default function TripDetailDrawer({
                           {/* Editable fields */}
                           {canEditStops && !isDelivered && isCurrentStop && (
                             <>
+                              {/* Navigate / View Route button */}
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                color="primary"
+                                startIcon={<GpsFixedIcon />}
+                                onClick={() => setShowRouteDialog(true)}
+                                fullWidth
+                              >
+                                View Best Route to {stop.locationName}
+                              </Button>
+
                               <TextField
                                 label="Driver Mileage (km)"
                                 size="small"
@@ -462,22 +490,67 @@ export default function TripDetailDrawer({
           {canAdvance && action && (
             <>
               <Divider />
-              <Button
-                variant="contained"
-                fullWidth
-                disabled={advancing || gettingGps}
-                startIcon={gettingGps ? <CircularProgress size={16} color="inherit" /> : <GpsFixedIcon />}
-                onClick={async () => {
-                  setGettingGps(true);
-                  const gps = await getCurrentPosition();
-                  setGettingGps(false);
-                  onAdvanceStatus(action.next, gps);
-                }}
-              >
-                {gettingGps ? 'Getting location...' : advancing ? 'Updating...' : action.label}
-              </Button>
+              {action.next === 'in_progress' ? (
+                /* Start Trip - show route optimization first */
+                <Button
+                  variant="contained"
+                  fullWidth
+                  disabled={advancing}
+                  startIcon={<GpsFixedIcon />}
+                  onClick={() => setShowRouteDialog(true)}
+                >
+                  Start Trip
+                </Button>
+              ) : (
+                /* Complete Trip - normal GPS capture */
+                <Button
+                  variant="contained"
+                  fullWidth
+                  disabled={advancing || gettingGps}
+                  startIcon={gettingGps ? <CircularProgress size={16} color="inherit" /> : <GpsFixedIcon />}
+                  onClick={async () => {
+                    setGettingGps(true);
+                    const gps = await getCurrentPosition();
+                    setGettingGps(false);
+                    onAdvanceStatus(action.next, gps);
+                  }}
+                >
+                  {gettingGps ? 'Getting location...' : advancing ? 'Updating...' : action.label}
+                </Button>
+              )}
             </>
           )}
+
+          {/* Route Optimization Dialog */}
+          <RouteOptimizationDialog
+            open={showRouteDialog}
+            trip={trip}
+            onClose={() => setShowRouteDialog(false)}
+            onStartTrip={async () => {
+              setShowRouteDialog(false);
+              
+              // If trip is still assigned (not started yet), start it
+              if (trip.status === 'assigned') {
+                setGettingGps(true);
+                const gps = await getCurrentPosition();
+                setGettingGps(false);
+                onAdvanceStatus('in_progress', gps);
+              }
+
+              // Open Google Maps navigation to next pending stop
+              const stops = trip.stops || [];
+              const nextStop = stops.find((s) => s.status !== 'delivered');
+              if (nextStop) {
+                const nextIndex = stops.findIndex((s) => s.id === nextStop.id);
+                const previousStop = nextIndex > 0 ? stops[nextIndex - 1] : null;
+                const originName = previousStop ? previousStop.locationName : trip.origin;
+                const origin = encodeURIComponent(originName);
+                const destination = encodeURIComponent(nextStop.locationName);
+                const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving&dir_action=navigate`;
+                window.open(url, '_blank');
+              }
+            }}
+          />
         </Stack>
       </Box>
     </Drawer>

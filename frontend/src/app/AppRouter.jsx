@@ -9,6 +9,8 @@ import CustomersListPage from '../features/customers/pages/CustomersListPage';
 import DriversListPage from '../features/drivers/pages/DriversListPage';
 import TripsListPage from '../features/trips/pages/TripsListPage';
 import TripApprovalsPage from '../features/trips/pages/TripApprovalsPage';
+import BusinessTripsPage from '../features/trips/pages/BusinessTripsPage';
+import LocationsListPage from '../features/locations/pages/LocationsListPage';
 
 export default function AppRouter() {
   return (
@@ -24,12 +26,20 @@ export default function AppRouter() {
             <Route path="/trips" element={<TripsListPage />} />
           </Route>
 
+          <Route element={<ProtectedRoute permissions={['trips:read']} />}>
+            <Route path="/business-trips" element={<BusinessTripsPage />} />
+          </Route>
+
           <Route element={<ProtectedRoute permissions={['trips:update']} />}>
             <Route path="/trip-approvals" element={<TripApprovalsPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permissions={['customers:read']} />}>
             <Route path="/customers" element={<CustomersListPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute permissions={['customers:read']} />}>
+            <Route path="/locations" element={<LocationsListPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permissions={['drivers:read']} />}>

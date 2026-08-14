@@ -13,6 +13,7 @@ import {
   TextField,
   Paper,
   Collapse,
+  Divider,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -36,7 +37,7 @@ function getMileageDiffColor(driverMileage, gpsMileage) {
 
 function getMileageDiffLabel(driverMileage, gpsMileage) {
   if (driverMileage == null || gpsMileage == null) return '—';
-  const diff = (driverMileage - gpsMileage).toFixed(2);
+  const diff = (driverMileage - gpsMileage).toFixed(1);
   return diff > 0 ? `+${diff} km` : `${diff} km`;
 }
 
@@ -58,9 +59,7 @@ export default function TripApprovalsPage() {
     {
       field: 'tripNumber',
       headerName: 'Trip #',
-      render: (row) => (
-        <Typography variant="body2" fontWeight={700}>{row.tripNumber}</Typography>
-      ),
+      render: (row) => <Typography variant="body2" fontWeight={700}>{row.tripNumber}</Typography>,
     },
     {
       field: 'route',
@@ -90,21 +89,10 @@ export default function TripApprovalsPage() {
           <IconButton size="small" onClick={() => setSelectedTrip(row)} title="Review">
             <VisibilityIcon fontSize="small" />
           </IconButton>
-          <IconButton
-            size="small"
-            color="success"
-            onClick={() => handleApprove(row.id)}
-            disabled={approveTrip.isPending}
-            title="Approve"
-          >
+          <IconButton size="small" color="success" onClick={() => handleApprove(row.id)} disabled={approveTrip.isPending} title="Approve">
             <CheckCircleIcon fontSize="small" />
           </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            onClick={() => { setRejectTarget(row); setRejectDialogOpen(true); }}
-            title="Reject"
-          >
+          <IconButton size="small" color="error" onClick={() => { setRejectTarget(row); setRejectDialogOpen(true); }} title="Reject">
             <CancelIcon fontSize="small" />
           </IconButton>
         </Stack>
@@ -161,48 +149,35 @@ export default function TripApprovalsPage() {
       {/* Trip Detail Review Panel */}
       {selectedTrip && (
         <Paper sx={{ mt: 3, p: 3, borderRadius: 2 }} elevation={2}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          {/* Header */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} sx={{ mb: 3 }}>
             <Typography variant="h6" fontWeight={700}>
               Review: {selectedTrip.tripNumber}
             </Typography>
             <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<CheckCircleIcon />}
-                onClick={() => handleApprove(selectedTrip.id)}
-                disabled={approveTrip.isPending}
-              >
+              <Button variant="contained" color="success" size="small" startIcon={<CheckCircleIcon />} onClick={() => handleApprove(selectedTrip.id)} disabled={approveTrip.isPending}>
                 Approve
               </Button>
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<CancelIcon />}
-                onClick={() => { setRejectTarget(selectedTrip); setRejectDialogOpen(true); }}
-              >
+              <Button variant="contained" color="error" size="small" startIcon={<CancelIcon />} onClick={() => { setRejectTarget(selectedTrip); setRejectDialogOpen(true); }}>
                 Reject
               </Button>
             </Stack>
           </Stack>
 
-          <Stack spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>Route:</strong> {selectedTrip.origin} → {selectedTrip.destination}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Driver:</strong> {selectedTrip.driver ? `${selectedTrip.driver.firstName} ${selectedTrip.driver.lastName}` : '—'}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Completed:</strong> {selectedTrip.completedAt ? new Date(selectedTrip.completedAt).toLocaleString() : '—'}
-            </Typography>
+          {/* Trip info */}
+          <Stack spacing={0.5} sx={{ mb: 3 }}>
+            <Typography variant="body2"><strong>Route:</strong> {selectedTrip.origin} → {selectedTrip.destination}</Typography>
+            <Typography variant="body2"><strong>Driver:</strong> {selectedTrip.driver ? `${selectedTrip.driver.firstName} ${selectedTrip.driver.lastName}` : '—'}</Typography>
+            <Typography variant="body2"><strong>Completed:</strong> {selectedTrip.completedAt ? new Date(selectedTrip.completedAt).toLocaleString() : '—'}</Typography>
           </Stack>
 
-          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+          <Divider sx={{ mb: 2 }} />
+
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 0.5 }}>
             Stop Mileage Comparison
           </Typography>
 
-          <Stack spacing={1}>
+          <Stack spacing={1.5}>
             {(selectedTrip.stops || []).map((stop) => {
               const isExpanded = expandedStop === stop.id;
               const diffColor = getMileageDiffColor(stop.driverMileage, stop.gpsMileage);
@@ -211,88 +186,73 @@ export default function TripApprovalsPage() {
                 <Paper
                   key={stop.id}
                   elevation={0}
-                  sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1.5, cursor: 'pointer' }}
+                  sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, cursor: 'pointer' }}
                   onClick={() => setExpandedStop(isExpanded ? null : stop.id)}
                 >
+                  {/* Stop header */}
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Typography variant="body2" fontWeight={600}>
                         {stop.sequenceNo}. {stop.locationName}
                       </Typography>
-                      <Chip
-                        size="small"
-                        label={stop.status}
-                        color={stop.status === 'delivered' ? 'success' : 'default'}
-                        sx={{ height: 20, fontSize: 10, textTransform: 'capitalize' }}
-                      />
+                      <Chip size="small" label={stop.status} color={stop.status === 'delivered' ? 'success' : 'default'} sx={{ height: 20, fontSize: 10, textTransform: 'capitalize' }} />
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
                       {stop.driverMileage != null && stop.gpsMileage != null && (
-                        <Chip
-                          size="small"
-                          label={getMileageDiffLabel(stop.driverMileage, stop.gpsMileage)}
-                          color={diffColor}
-                          sx={{ height: 22, fontSize: 11 }}
-                        />
+                        <Chip size="small" label={getMileageDiffLabel(stop.driverMileage, stop.gpsMileage)} color={diffColor} sx={{ height: 24, fontSize: 11, fontWeight: 700 }} />
                       )}
                       {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                     </Stack>
                   </Stack>
 
+                  {/* Expanded details */}
                   <Collapse in={isExpanded}>
-                    <Stack spacing={0.75} sx={{ mt: 1.5, pl: 1 }}>
-                      <Stack direction="row" spacing={2}>
-                        <Box sx={{ minWidth: 140 }}>
+                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                      {/* Mileage comparison - card style */}
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
+                        <Paper elevation={0} sx={{ flex: 1, p: 1.5, borderRadius: 1.5, bgcolor: 'grey.50', textAlign: 'center' }}>
                           <Typography variant="caption" color="text.secondary">Driver Mileage</Typography>
-                          <Typography variant="body2" fontWeight={600}>
+                          <Typography variant="h6" fontWeight={700} sx={{ mt: 0.5 }}>
                             {stop.driverMileage != null ? `${stop.driverMileage} km` : '—'}
                           </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 140 }}>
-                          <Typography variant="caption" color="text.secondary">GPS Mileage</Typography>
-                          <Stack direction="row" spacing={0.5} alignItems="center">
+                        </Paper>
+                        <Paper elevation={0} sx={{ flex: 1, p: 1.5, borderRadius: 1.5, bgcolor: 'success.50', textAlign: 'center' }}>
+                          <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center">
                             <GpsFixedIcon sx={{ fontSize: 14 }} color="success" />
-                            <Typography variant="body2" fontWeight={600}>
-                              {stop.gpsMileage != null ? `${stop.gpsMileage} km` : '—'}
-                            </Typography>
+                            <Typography variant="caption" color="text.secondary">GPS Mileage</Typography>
                           </Stack>
-                        </Box>
-                        <Box sx={{ minWidth: 100 }}>
+                          <Typography variant="h6" fontWeight={700} sx={{ mt: 0.5 }}>
+                            {stop.gpsMileage != null ? `${stop.gpsMileage} km` : '—'}
+                          </Typography>
+                        </Paper>
+                        <Paper elevation={0} sx={{ flex: 1, p: 1.5, borderRadius: 1.5, bgcolor: diffColor === 'error' ? 'error.50' : diffColor === 'warning' ? 'warning.50' : 'success.50', textAlign: 'center' }}>
                           <Typography variant="caption" color="text.secondary">Difference</Typography>
-                          <Chip
-                            size="small"
-                            label={getMileageDiffLabel(stop.driverMileage, stop.gpsMileage)}
-                            color={diffColor}
-                            sx={{ height: 20, fontSize: 10 }}
-                          />
-                        </Box>
+                          <Typography variant="h6" fontWeight={700} color={`${diffColor}.main`} sx={{ mt: 0.5 }}>
+                            {getMileageDiffLabel(stop.driverMileage, stop.gpsMileage)}
+                          </Typography>
+                        </Paper>
                       </Stack>
 
-                      {stop.gpsLocationName && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">GPS Location</Typography>
-                          <Typography variant="body2">{stop.gpsLocationName}</Typography>
-                        </Box>
-                      )}
-
-                      {stop.latitude && stop.longitude && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Coordinates</Typography>
-                          <Typography variant="body2">{stop.latitude}, {stop.longitude}</Typography>
-                        </Box>
-                      )}
-
-                      {stop.invoices?.length > 0 && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Invoices</Typography>
-                          <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.25 }}>
-                            {stop.invoices.map((inv, i) => (
-                              <Chip key={i} label={inv} size="small" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
-                            ))}
-                          </Stack>
-                        </Box>
-                      )}
-                    </Stack>
+                      {/* Additional details */}
+                      <Stack spacing={1.5}>
+                        {stop.gpsLocationName && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>GPS Location</Typography>
+                            <Typography variant="body2" fontWeight={500}>{stop.gpsLocationName}</Typography>
+                          </Box>
+                        )}
+                        {stop.invoices?.length > 0 && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Invoices</Typography>
+                            <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                              {stop.invoices.map((inv, i) => (
+                                <Chip key={i} label={inv} size="small" variant="outlined" sx={{ height: 24, fontSize: 11 }} />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
+                      </Stack>
+                    </Box>
                   </Collapse>
                 </Paper>
               );
@@ -306,7 +266,7 @@ export default function TripApprovalsPage() {
         <DialogTitle>Reject Trip</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Optionally provide a reason for rejecting trip <strong>{rejectTarget?.tripNumber}</strong>.
+            Provide a reason for rejecting trip <strong>{rejectTarget?.tripNumber}</strong>.
           </Typography>
           <TextField
             label="Rejection Reason"
