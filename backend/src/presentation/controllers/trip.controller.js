@@ -49,6 +49,7 @@ class TripController {
     const options = {
       ...pagination,
       status: req.query.status,
+      approvalStatus: req.query.approvalStatus,
       driverId: req.query.driverId,
       customerId: req.query.customerId,
       dateFrom: req.query.dateFrom,

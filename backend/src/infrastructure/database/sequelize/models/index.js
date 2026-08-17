@@ -12,6 +12,7 @@ const Trip = require('./Trip.model');
 const TripStop = require('./TripStop.model');
 const TripStopInvoice = require('./TripStopInvoice.model');
 const Location = require('./Location.model');
+const TripLocationPing = require('./TripLocationPing.model');
 
 // Associations
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'roleId', otherKey: 'permissionId' });
@@ -47,6 +48,9 @@ TripStopInvoice.belongsTo(TripStop, { foreignKey: 'tripStopId' });
 Customer.hasMany(Location, { foreignKey: 'customerId' });
 Location.belongsTo(Customer, { foreignKey: 'customerId' });
 
+Trip.hasMany(TripLocationPing, { foreignKey: 'tripId' });
+TripLocationPing.belongsTo(Trip, { foreignKey: 'tripId' });
+
 module.exports = {
   sequelize,
   Role,
@@ -62,4 +66,5 @@ module.exports = {
   TripStop,
   TripStopInvoice,
   Location,
+  TripLocationPing,
 };

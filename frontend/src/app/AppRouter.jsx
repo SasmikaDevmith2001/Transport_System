@@ -11,6 +11,8 @@ import TripsListPage from '../features/trips/pages/TripsListPage';
 import TripApprovalsPage from '../features/trips/pages/TripApprovalsPage';
 import BusinessTripsPage from '../features/trips/pages/BusinessTripsPage';
 import LocationsListPage from '../features/locations/pages/LocationsListPage';
+import LiveTrackingPage from '../features/tracking/pages/LiveTrackingPage';
+import InvoicesPage from '../features/invoices/pages/InvoicesPage';
 
 export default function AppRouter() {
   return (
@@ -32,6 +34,14 @@ export default function AppRouter() {
 
           <Route element={<ProtectedRoute permissions={['trips:update']} />}>
             <Route path="/trip-approvals" element={<TripApprovalsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute permissions={['trips:update']} />}>
+            <Route path="/live-tracking" element={<LiveTrackingPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute permissions={['trips:read']} />}>
+            <Route path="/invoices" element={<InvoicesPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permissions={['customers:read']} />}>

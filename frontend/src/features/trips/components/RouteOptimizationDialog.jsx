@@ -97,6 +97,14 @@ export default function RouteOptimizationDialog({ open, trip, onClose, onStartTr
             if (trafficDelay > 600) trafficLevel = 'moderate'; // >10 min delay
             if (trafficDelay > 1800) trafficLevel = 'heavy'; // >30 min delay
 
+            // Extract a midpoint from the route path to use as waypoint in Google Maps URL
+            const overviewPath = route.overview_path;
+            let midpoint = null;
+            if (overviewPath && overviewPath.length > 2) {
+              const midIdx = Math.floor(overviewPath.length / 2);
+              midpoint = { lat: overviewPath[midIdx].lat(), lng: overviewPath[midIdx].lng() };
+            }
+
             return {
               index: idx,
               summary: route.summary || `Route ${idx + 1}`,
@@ -107,6 +115,7 @@ export default function RouteOptimizationDialog({ open, trip, onClose, onStartTr
               trafficDelay: trafficDelay > 60 ? `+${formatTime(trafficDelay)}` : null,
               trafficLevel,
               warnings: route.warnings || [],
+              midpoint,
             };
           });
 
@@ -254,7 +263,10 @@ export default function RouteOptimizationDialog({ open, trip, onClose, onStartTr
 
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button onClick={onClose} variant="outlined">Close</Button>
-        <Button onClick={onStartTrip} variant="contained" startIcon={<NavigationIcon />} disabled={loading || !!error}>
+        <Button onClick={() => {
+          const selected = routes.find((r) => r.index === selectedRoute);
+          onStartTrip(selected?.midpoint || null);
+        }} variant="contained" startIcon={<NavigationIcon />} disabled={loading || !!error}>
           Start Trip
         </Button>
       </DialogActions>

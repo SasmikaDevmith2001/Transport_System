@@ -69,6 +69,7 @@ const CustomerController = require('../presentation/controllers/customer.control
 const DriverController = require('../presentation/controllers/driver.controller');
 const TripController = require('../presentation/controllers/trip.controller');
 const LocationController = require('../presentation/controllers/location.controller');
+const TrackingController = require('../presentation/controllers/tracking.controller');
 
 // --- Wire use cases ---
 const loginUseCase = new LoginUseCase(userRepository, roleRepository, refreshTokenRepository, hasher, tokenService, logger);
@@ -147,6 +148,7 @@ const tripController = new TripController({
 });
 
 const locationController = new LocationController({ locationRepository });
+const trackingController = new TrackingController();
 
 module.exports = {
   authController,
@@ -156,5 +158,6 @@ module.exports = {
   driverController,
   tripController,
   locationController,
+  trackingController,
   logger,
 };

@@ -62,7 +62,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
   const isEdit = !!trip;
   const { data: customersData } = useCustomersList({ page: 1, pageSize: 100, status: 'active' });
   const customers = customersData?.data || [];
-  const { data: locations = [] } = useActiveLocations();
+  const { data: allLocations = [] } = useActiveLocations();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -76,6 +76,12 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
   } = useForm({ resolver: joiResolver(tripSchema), defaultValues: DEFAULTS });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'stops' });
+
+  const watchedCustomerId = watch('customerId');
+  // Only show locations for the selected customer (empty if no customer selected)
+  const locations = watchedCustomerId
+    ? allLocations.filter((l) => l.customerId === watchedCustomerId || !l.customerId)
+    : [];
 
   const [distances, setDistances] = useState([]); 
   const [totalDistance, setTotalDistance] = useState(null);

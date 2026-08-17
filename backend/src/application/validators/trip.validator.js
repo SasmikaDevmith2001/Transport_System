@@ -75,6 +75,7 @@ const listTripsQuerySchema = Joi.object({
   sortOrder: Joi.string().valid('asc', 'desc', 'ASC', 'DESC'),
   search: Joi.string().trim().allow(''),
   status: Joi.string().valid('pending', 'assigned', 'in_progress', 'completed', 'cancelled'),
+  approvalStatus: Joi.string().valid('pending', 'approved', 'rejected'),
   driverId: Joi.number().integer().positive(),
   customerId: Joi.number().integer().positive(),
   dateFrom: Joi.date().iso(),

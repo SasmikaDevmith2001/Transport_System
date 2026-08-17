@@ -25,6 +25,7 @@ import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircle';
 import { getCurrentPosition, getDrivingDistanceKm, reverseGeocode } from '../../../utils/gps';
+import { startTracking, stopTracking } from '../../../services/gpsTracker';
 import RouteOptimizationDialog from './RouteOptimizationDialog';
 
 const TRIP_STATUS_COLORS = {
@@ -513,6 +514,10 @@ export default function TripDetailDrawer({
                     const gps = await getCurrentPosition();
                     setGettingGps(false);
                     onAdvanceStatus(action.next, gps);
+                    // Stop tracking when trip is completed
+                    if (action.next === 'completed') {
+                      stopTracking();
+                    }
                   }}
                 >
                   {gettingGps ? 'Getting location...' : advancing ? 'Updating...' : action.label}
@@ -526,7 +531,7 @@ export default function TripDetailDrawer({
             open={showRouteDialog}
             trip={trip}
             onClose={() => setShowRouteDialog(false)}
-            onStartTrip={async () => {
+            onStartTrip={async (midpoint) => {
               setShowRouteDialog(false);
               
               // If trip is still assigned (not started yet), start it
@@ -535,9 +540,11 @@ export default function TripDetailDrawer({
                 const gps = await getCurrentPosition();
                 setGettingGps(false);
                 onAdvanceStatus('in_progress', gps);
+                // Start GPS tracking
+                startTracking(trip.id);
               }
 
-              // Open Google Maps navigation to next pending stop
+              // Open Google Maps navigation to next pending stop with route midpoint as waypoint
               const stops = trip.stops || [];
               const nextStop = stops.find((s) => s.status !== 'delivered');
               if (nextStop) {
@@ -546,7 +553,15 @@ export default function TripDetailDrawer({
                 const originName = previousStop ? previousStop.locationName : trip.origin;
                 const origin = encodeURIComponent(originName);
                 const destination = encodeURIComponent(nextStop.locationName);
-                const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving&dir_action=navigate`;
+                
+                // Use midpoint as waypoint to force Google Maps to use the selected route
+                let url;
+                if (midpoint) {
+                  const wp = `${midpoint.lat},${midpoint.lng}`;
+                  url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${wp}&travelmode=driving&dir_action=navigate`;
+                } else {
+                  url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving&dir_action=navigate`;
+                }
                 window.open(url, '_blank');
               }
             }}

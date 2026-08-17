@@ -74,7 +74,7 @@ function toDomain(instance) {
     deletedAt: plain.deletedAt,
     customer: plain.Customer ? { id: plain.Customer.id, companyName: plain.Customer.companyName } : null,
     driver: plain.Driver
-      ? { id: plain.Driver.id, firstName: plain.Driver.firstName, lastName: plain.Driver.lastName, phone: plain.Driver.phone }
+      ? { id: plain.Driver.id, firstName: plain.Driver.firstName, lastName: plain.Driver.lastName, phone: plain.Driver.phone, vehicleNumber: plain.Driver.vehicleNumber }
       : null,
     stops: (plain.TripStops || []).map(stopToDomain).sort((a, b) => a.sequenceNo - b.sequenceNo),
   });
@@ -82,7 +82,7 @@ function toDomain(instance) {
 
 const INCLUDE_RELATIONS = [
   { model: CustomerModel, attributes: ['id', 'companyName'] },
-  { model: DriverModel, attributes: ['id', 'firstName', 'lastName', 'phone'] },
+  { model: DriverModel, attributes: ['id', 'firstName', 'lastName', 'phone', 'vehicleNumber'] },
   { model: TripStopModel, as: 'TripStops', include: [{ model: TripStopInvoiceModel, as: 'Invoices' }] },
 ];
 
@@ -163,10 +163,11 @@ class TripRepository extends ITripRepository {
     return { rows: rows.map(toDomain), total: count, page, pageSize };
   }
 
-  async list({ page, pageSize, offset, sortBy, sortOrder, search, status, driverId, customerId, dateFrom, dateTo }) {
+  async list({ page, pageSize, offset, sortBy, sortOrder, search, status, approvalStatus, driverId, customerId, dateFrom, dateTo }) {
     const where = {};
 
     if (status) where.status = status;
+    if (approvalStatus) where.approvalStatus = approvalStatus;
     if (driverId) where.driverId = driverId;
     if (customerId) where.customerId = customerId;
 
