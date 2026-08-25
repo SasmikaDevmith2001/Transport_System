@@ -6,13 +6,11 @@ import UnauthorizedPage from '../features/auth/pages/UnauthorizedPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import UsersListPage from '../features/users/pages/UsersListPage';
 import CustomersListPage from '../features/customers/pages/CustomersListPage';
-import DriversListPage from '../features/drivers/pages/DriversListPage';
 import TripsListPage from '../features/trips/pages/TripsListPage';
 import TripApprovalsPage from '../features/trips/pages/TripApprovalsPage';
 import BusinessTripsPage from '../features/trips/pages/BusinessTripsPage';
 import LocationsListPage from '../features/locations/pages/LocationsListPage';
 import LiveTrackingPage from '../features/tracking/pages/LiveTrackingPage';
-import InvoicesPage from '../features/invoices/pages/InvoicesPage';
 
 export default function AppRouter() {
   return (
@@ -40,20 +38,8 @@ export default function AppRouter() {
             <Route path="/live-tracking" element={<LiveTrackingPage />} />
           </Route>
 
-          <Route element={<ProtectedRoute permissions={['trips:read']} />}>
-            <Route path="/invoices" element={<InvoicesPage />} />
-          </Route>
-
           <Route element={<ProtectedRoute permissions={['customers:read']} />}>
             <Route path="/customers" element={<CustomersListPage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute permissions={['customers:read']} />}>
-            <Route path="/locations" element={<LocationsListPage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute permissions={['drivers:read']} />}>
-            <Route path="/drivers" element={<DriversListPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permissions={['users:read']} />}>

@@ -76,10 +76,10 @@ const loginUseCase = new LoginUseCase(userRepository, roleRepository, refreshTok
 const refreshTokenUseCase = new RefreshTokenUseCase(userRepository, roleRepository, refreshTokenRepository, tokenService, logger);
 const logoutUseCase = new LogoutUseCase(refreshTokenRepository, tokenService);
 
-const createUserUseCase = new CreateUserUseCase(userRepository, roleRepository, hasher, logger);
+const createUserUseCase = new CreateUserUseCase(userRepository, roleRepository, hasher, logger, driverRepository);
 const getUserUseCase = new GetUserUseCase(userRepository);
 const listUsersUseCase = new ListUsersUseCase(userRepository);
-const updateUserUseCase = new UpdateUserUseCase(userRepository, roleRepository, logger);
+const updateUserUseCase = new UpdateUserUseCase(userRepository, roleRepository, logger, driverRepository);
 const deleteUserUseCase = new DeleteUserUseCase(userRepository, roleRepository, logger);
 const listRolesUseCase = new ListRolesUseCase(roleRepository);
 

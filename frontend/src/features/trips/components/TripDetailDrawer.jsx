@@ -455,7 +455,12 @@ export default function TripDetailDrawer({
                                   color="success"
                                   startIcon={gettingGps ? <CircularProgress size={14} color="inherit" /> : <CheckCircleIcon />}
                                   onClick={() => handleMarkDelivered(stop)}
-                                  disabled={savingStop || gettingGps}
+                                  disabled={
+                                    savingStop ||
+                                    gettingGps ||
+                                    !edit.driverMileage ||
+                                    !(edit.invoices || []).some((inv) => inv.trim() !== '')
+                                  }
                                 >
                                   {gettingGps ? 'Getting GPS...' : 'Mark Delivered'}
                                 </Button>

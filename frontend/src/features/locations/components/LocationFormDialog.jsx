@@ -8,7 +8,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  MenuItem,
   Grid,
   Typography,
   IconButton,
@@ -21,19 +20,16 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { useCustomersList } from '../../customers/hooks/useCustomers';
 
 const MapPicker = lazy(() => import('./MapPicker'));
 
 const locationSchema = Joi.object({
-  customerId: Joi.any(),
   name: Joi.string().trim().min(1).max(150).required().messages({ 'string.empty': 'Location name is required' }),
   latitude: Joi.number().min(-90).max(90).required().messages({ 'any.required': 'Pick a location on the map', 'number.base': 'Pick a location on the map' }),
   longitude: Joi.number().min(-180).max(180).required().messages({ 'any.required': 'Pick a location on the map', 'number.base': 'Pick a location on the map' }),
 });
 
 const DEFAULTS = {
-  customerId: '',
   name: '',
   latitude: '',
   longitude: '',
@@ -43,8 +39,6 @@ export default function LocationFormDialog({ open, location = null, submitting =
   const isEdit = !!location;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { data: customersData } = useCustomersList({ page: 1, pageSize: 100 });
-  const customers = customersData?.data || [];
 
   const {
     control,
@@ -62,7 +56,6 @@ export default function LocationFormDialog({ open, location = null, submitting =
     if (open) {
       if (location) {
         reset({
-          customerId: location.customerId || '',
           name: location.name || '',
           latitude: location.latitude,
           longitude: location.longitude,
@@ -83,7 +76,6 @@ export default function LocationFormDialog({ open, location = null, submitting =
       name: values.name,
       latitude: values.latitude,
       longitude: values.longitude,
-      customerId: values.customerId || null,
     };
     onSubmit(payload);
   };
@@ -131,26 +123,12 @@ export default function LocationFormDialog({ open, location = null, submitting =
             </Typography>
           </Box>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Controller
                 name="name"
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} label="Location Name" fullWidth size="small" error={!!errors.name} helperText={errors.name?.message} placeholder="e.g., Katunayake Warehouse" />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="customerId"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Customer (optional)" fullWidth size="small">
-                    <MenuItem value="">— No customer —</MenuItem>
-                    {customers.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>{c.companyName}</MenuItem>
-                    ))}
-                  </TextField>
                 )}
               />
             </Grid>

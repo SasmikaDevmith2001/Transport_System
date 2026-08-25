@@ -1,17 +1,22 @@
 import { useState } from 'react';
-import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar } from '@mui/material';
+import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Collapse, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import BusinessIcon from '@mui/icons-material/Business';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
 import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
 import StatusChip from '../../../components/feedback/StatusChip';
 import CustomerFormDialog from '../components/CustomerFormDialog';
+import LocationFormDialog from '../../locations/components/LocationFormDialog';
 import { useCustomersList, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useCustomers';
+import { useActiveLocations, useCreateLocation, useUpdateLocation, useDeleteLocation } from '../../locations/hooks/useLocations';
 import { useAuth } from '../../../contexts/AuthContext';
 
 export default function CustomersListPage() {
@@ -28,34 +33,100 @@ export default function CustomersListPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [expandedCustomer, setExpandedCustomer] = useState(null);
+  const [locationFormOpen, setLocationFormOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(null);
+  const [locationCustomerId, setLocationCustomerId] = useState(null);
+  const [deleteLocationTarget, setDeleteLocationTarget] = useState(null);
 
   const params = { page, pageSize, search: search || undefined, status: status || undefined, sortBy, sortOrder };
   const { data, isLoading } = useCustomersList(params);
+  const { data: allLocations = [] } = useActiveLocations();
 
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+  const createLocation = useCreateLocation();
+  const updateLocation = useUpdateLocation();
+  const deleteLocation = useDeleteLocation();
 
   const columns = [
     {
       field: 'companyName',
       headerName: 'Company',
       sortable: true,
-      render: (row) => (
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Avatar variant="rounded" sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 14 }}>
-            <BusinessIcon fontSize="small" />
-          </Avatar>
+      render: (row) => {
+        const customerLocations = allLocations.filter((l) => l.customerId === row.id);
+        const isExpanded = expandedCustomer === row.id;
+
+        return (
           <Box>
-            <Typography variant="body2" fontWeight={600}>
-              {row.companyName}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {row.contactPerson || '—'}
-            </Typography>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Avatar variant="rounded" sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 14 }}>
+                <BusinessIcon fontSize="small" />
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" fontWeight={600}>
+                  {row.companyName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {row.contactPerson || '—'}
+                </Typography>
+              </Box>
+              {customerLocations.length > 0 && (
+                <IconButton
+                  size="small"
+                  onClick={(e) => { e.stopPropagation(); setExpandedCustomer(isExpanded ? null : row.id); }}
+                >
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Chip size="small" icon={<LocationOnIcon />} label={customerLocations.length} sx={{ height: 22, fontSize: 11 }} />
+                    {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                  </Stack>
+                </IconButton>
+              )}
+              {customerLocations.length === 0 && hasPermission('customers:create') && (
+                <IconButton
+                  size="small"
+                  onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
+                  title="Add location"
+                >
+                  <AddIcon fontSize="small" color="primary" />
+                </IconButton>
+              )}
+            </Stack>
+            <Collapse in={isExpanded}>
+              <Stack spacing={0.5} sx={{ mt: 1, ml: 6.5 }}>
+                {customerLocations.map((loc) => (
+                  <Stack key={loc.id} direction="row" spacing={0.5} alignItems="center">
+                    <LocationOnIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                    <Typography variant="caption" fontWeight={500} sx={{ flex: 1 }}>{loc.name}</Typography>
+                    {hasPermission('customers:update') && (
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditingLocation(loc); setLocationCustomerId(row.id); setLocationFormOpen(true); }}>
+                        <EditIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    {hasPermission('customers:delete') && (
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setDeleteLocationTarget(loc); }}>
+                        <DeleteIcon sx={{ fontSize: 14 }} color="error" />
+                      </IconButton>
+                    )}
+                  </Stack>
+                ))}
+                {hasPermission('customers:create') && (
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
+                    sx={{ alignSelf: 'flex-start', mt: 0.5 }}
+                  >
+                    Add Location
+                  </Button>
+                )}
+              </Stack>
+            </Collapse>
           </Box>
-        </Stack>
-      ),
+        );
+      },
     },
     { field: 'phone', headerName: 'Phone', sortable: false },
     { field: 'city', headerName: 'City', sortable: true, render: (row) => row.city || '-' },
@@ -181,6 +252,46 @@ export default function CustomersListPage() {
         loading={deleteCustomer.isPending}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
+      />
+
+      <LocationFormDialog
+        open={locationFormOpen}
+        location={editingLocation ? { ...editingLocation, customerId: locationCustomerId } : null}
+        submitting={createLocation.isPending || updateLocation.isPending}
+        onSubmit={async (values) => {
+          try {
+            const payload = { ...values, customerId: locationCustomerId };
+            if (editingLocation) {
+              await updateLocation.mutateAsync({ id: editingLocation.id, payload });
+              enqueueSnackbar('Location updated', { variant: 'success' });
+            } else {
+              await createLocation.mutateAsync(payload);
+              enqueueSnackbar('Location created', { variant: 'success' });
+            }
+            setLocationFormOpen(false);
+            setEditingLocation(null);
+          } catch (err) {
+            enqueueSnackbar(err.response?.data?.message || 'Failed to save location', { variant: 'error' });
+          }
+        }}
+        onClose={() => { setLocationFormOpen(false); setEditingLocation(null); }}
+      />
+
+      <ConfirmDialog
+        open={!!deleteLocationTarget}
+        title="Delete location"
+        message={`Are you sure you want to delete "${deleteLocationTarget?.name}"?`}
+        loading={deleteLocation.isPending}
+        onConfirm={async () => {
+          try {
+            await deleteLocation.mutateAsync(deleteLocationTarget.id);
+            enqueueSnackbar('Location deleted', { variant: 'success' });
+            setDeleteLocationTarget(null);
+          } catch (err) {
+            enqueueSnackbar(err.response?.data?.message || 'Failed to delete location', { variant: 'error' });
+          }
+        }}
+        onClose={() => setDeleteLocationTarget(null)}
       />
     </Box>
   );

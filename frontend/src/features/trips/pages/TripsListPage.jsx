@@ -6,6 +6,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAddAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -13,6 +14,7 @@ import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
 import TripFormDialog from '../components/TripFormDialog';
 import AssignDriverDialog from '../components/AssignDriverDialog';
 import TripDetailDrawer from '../components/TripDetailDrawer';
+import TripInvoiceDialog from '../components/TripInvoiceDialog';
 import {
   useTripsList,
   useCreateTrip,
@@ -51,6 +53,7 @@ export default function TripsListPage() {
   const [assignTarget, setAssignTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewingTrip, setViewingTrip] = useState(null);
+  const [invoiceTrip, setInvoiceTrip] = useState(null);
 
   const params = { page, pageSize, search: search || undefined, status: status || undefined, sortBy, sortOrder };
   const { data, isLoading } = useTripsList(params);
@@ -105,6 +108,11 @@ export default function TripsListPage() {
           <IconButton size="small" onClick={() => setViewingTrip(row)}>
             <VisibilityIcon fontSize="small" />
           </IconButton>
+          {row.status === 'completed' && (
+            <IconButton size="small" onClick={() => setInvoiceTrip(row)} title="View Invoice">
+              <ReceiptIcon fontSize="small" color="primary" />
+            </IconButton>
+          )}
           {hasPermission('trips:update') && !isDriver && (
             <IconButton size="small" onClick={() => { setEditing(row); setFormOpen(true); }}>
               <EditIcon fontSize="small" />
@@ -286,6 +294,12 @@ export default function TripsListPage() {
         loading={deleteTrip.isPending}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
+      />
+
+      <TripInvoiceDialog
+        open={!!invoiceTrip}
+        trip={invoiceTrip}
+        onClose={() => setInvoiceTrip(null)}
       />
     </Box>
   );
