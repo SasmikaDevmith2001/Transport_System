@@ -8,68 +8,67 @@ const NoTransition = forwardRef(function NoTransition({ children, in: inProp }, 
 
 
 /**
- * Modern, professional design system for an enterprise logistics dashboard.
+ * Navy Blue & White design system for an enterprise logistics dashboard.
  * Built as a factory so ThemeModeContext can regenerate it on dark-mode toggle.
  *
- * Palette: deep navy/indigo primary (trust, logistics/enterprise feel),
- * amber accent for highlights/CTAs, neutral slate greys for surfaces.
+ * Palette: navy blue is the single dominant accent (brand, actions, active
+ * states); white/near-white surfaces everywhere else. No secondary accent
+ * color - status colors (success/warning/error/info) are used sparingly
+ * for chips and alerts only.
  */
 export function buildTheme(mode) {
   const isDark = mode === 'dark';
 
+  const navy = {
+    main: '#0A2F5C',
+    light: '#1E4D85',
+    dark: '#061D3B',
+    contrastText: '#FFFFFF',
+  };
+
   return createTheme({
     palette: {
       mode,
-      primary: {
-        main: '#1E3A8A',
-        light: '#3B5BC4',
-        dark: '#152A63',
-        contrastText: '#FFFFFF',
-      },
-      secondary: {
-        main: '#F59E0B',
-        light: '#FBBF24',
-        dark: '#B45309',
-        contrastText: '#1A1A1A',
-      },
+      primary: navy,
+      secondary: navy,
       success: { main: '#16A34A' },
-      warning: { main: '#F59E0B' },
+      warning: { main: '#D97706' },
       error: { main: '#DC2626' },
-      info: { main: '#0EA5E9' },
+      info: { main: '#0A2F5C' },
       background: {
-        default: isDark ? '#0B0F19' : '#F4F6FA',
-        paper: isDark ? '#131A2B' : '#FFFFFF',
+        default: isDark ? '#0A1220' : '#FFFFFF',
+        paper: isDark ? '#0F1B2E' : '#FFFFFF',
       },
       text: {
-        primary: isDark ? '#E5E9F0' : '#1A2233',
-        secondary: isDark ? '#94A3B8' : '#64748B',
+        primary: isDark ? '#EEF2F8' : '#0F1A2B',
+        secondary: isDark ? '#8FA3BF' : '#5B6B85',
       },
-      divider: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.08)',
+      divider: isDark ? 'rgba(143,163,191,0.14)' : 'rgba(10,47,92,0.12)',
     },
     shape: {
-      borderRadius: 10,
+      borderRadius: 8,
     },
     typography: {
-      fontFamily: ['"Inter"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'].join(','),
+      fontFamily: ['"Inter Variable"', '"Inter"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'].join(','),
       h4: { fontWeight: 700, letterSpacing: -0.5 },
       h5: { fontWeight: 700, letterSpacing: -0.3 },
-      h6: { fontWeight: 600 },
+      h6: { fontWeight: 700 },
       subtitle1: { fontWeight: 600 },
-      subtitle2: { fontWeight: 600 },
+      subtitle2: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 12.5 },
       button: { fontWeight: 600, textTransform: 'none' },
     },
     shadows: [
       'none',
-      '0px 1px 2px rgba(15,23,42,0.06)',
-      '0px 2px 6px rgba(15,23,42,0.07)',
-      '0px 4px 10px rgba(15,23,42,0.08)',
-      ...Array(21).fill('0px 8px 24px rgba(15,23,42,0.10)'),
+      '0px 1px 2px rgba(10,47,92,0.06)',
+      '0px 2px 6px rgba(10,47,92,0.08)',
+      '0px 4px 10px rgba(10,47,92,0.08)',
+      ...Array(21).fill('0px 8px 24px rgba(10,47,92,0.10)'),
     ],
     components: {
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
-          root: { borderRadius: 8, paddingInline: 16 },
+          root: { borderRadius: 6, paddingInline: 16 },
           sizeMedium: { paddingTop: 8, paddingBottom: 8 },
         },
       },
@@ -81,8 +80,8 @@ export function buildTheme(mode) {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
-            border: `1px solid ${isDark ? 'rgba(148,163,184,0.10)' : 'rgba(15,23,42,0.07)'}`,
+            borderRadius: 12,
+            border: `1px solid ${isDark ? 'rgba(143,163,191,0.12)' : 'rgba(10,47,92,0.10)'}`,
           },
         },
       },
@@ -94,8 +93,8 @@ export function buildTheme(mode) {
               fontSize: 12.5,
               textTransform: 'uppercase',
               letterSpacing: 0.4,
-              color: isDark ? '#94A3B8' : '#64748B',
-              backgroundColor: isDark ? 'rgba(148,163,184,0.04)' : 'rgba(15,23,42,0.02)',
+              color: isDark ? '#8FA3BF' : '#5B6B85',
+              backgroundColor: isDark ? 'rgba(143,163,191,0.04)' : 'rgba(10,47,92,0.03)',
             },
           },
         },
@@ -104,7 +103,7 @@ export function buildTheme(mode) {
         styleOverrides: {
           root: {
             '&:hover': {
-              backgroundColor: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(15,23,42,0.02)',
+              backgroundColor: isDark ? 'rgba(143,163,191,0.06)' : 'rgba(10,47,92,0.03)',
             },
           },
         },
@@ -119,29 +118,29 @@ export function buildTheme(mode) {
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { borderRadius: 8 },
+          root: { borderRadius: 6 },
         },
       },
       MuiDrawer: {
         styleOverrides: {
           paper: {
-            backgroundColor: isDark ? '#0D1220' : '#FFFFFF',
-            borderRight: `1px solid ${isDark ? 'rgba(148,163,184,0.10)' : 'rgba(15,23,42,0.07)'}`,
+            backgroundColor: isDark ? '#081527' : '#FFFFFF',
+            borderRight: `1px solid ${isDark ? 'rgba(143,163,191,0.12)' : 'rgba(10,47,92,0.10)'}`,
           },
         },
       },
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: isDark ? '#0D1220' : '#FFFFFF',
-            borderBottom: `1px solid ${isDark ? 'rgba(148,163,184,0.10)' : 'rgba(15,23,42,0.07)'}`,
+            backgroundColor: isDark ? '#081527' : '#FFFFFF',
+            borderBottom: `1px solid ${isDark ? 'rgba(143,163,191,0.12)' : 'rgba(10,47,92,0.10)'}`,
           },
         },
       },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 8,
+            borderRadius: 6,
             marginInline: 8,
             marginBottom: 2,
           },

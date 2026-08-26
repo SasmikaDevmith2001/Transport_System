@@ -18,7 +18,7 @@ class UpdateTripStatusUseCase {
     this.logger = logger;
   }
 
-  async execute(tripId, nextStatus, actor) {
+  async execute(tripId, nextStatus, actor, gps = {}) {
     const trip = await this.tripRepository.findById(tripId);
     if (!trip) {
       throw new NotFoundError('Trip not found');
@@ -39,6 +39,17 @@ class UpdateTripStatusUseCase {
     const timestampField = TIMESTAMP_FIELD_BY_STATUS[nextStatus];
     if (timestampField) {
       updates[timestampField] = new Date();
+    }
+
+    // When trip is completed, auto-set approval status to pending for admin review
+    if (nextStatus === 'completed') {
+      updates.approvalStatus = 'pending';
+    }
+
+    // Capture GPS when starting the trip
+    if (nextStatus === 'in_progress' && gps.latitude && gps.longitude) {
+      updates.startLatitude = gps.latitude;
+      updates.startLongitude = gps.longitude;
     }
 
     const updated = await this.tripRepository.update(tripId, updates);

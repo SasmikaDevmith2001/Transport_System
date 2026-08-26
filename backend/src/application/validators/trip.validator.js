@@ -1,6 +1,7 @@
 const Joi = require('joi');
 
 const tripStopSchema = Joi.object({
+  locationId: Joi.number().integer().positive().allow(null),
   locationName: Joi.string().trim().min(1).max(255).required(),
   address: Joi.string().trim().max(255).allow(null, ''),
   contactName: Joi.string().trim().max(100).allow(null, ''),
@@ -42,15 +43,39 @@ const assignTripSchema = Joi.object({
 
 const updateTripStatusSchema = Joi.object({
   status: Joi.string().valid('pending', 'assigned', 'in_progress', 'completed', 'cancelled').required(),
+  latitude: Joi.number().min(-90).max(90).allow(null),
+  longitude: Joi.number().min(-180).max(180).allow(null),
+});
+
+const updateTripDriverDetailsSchema = Joi.object({
+  driverMileage: Joi.number().min(0).precision(2).allow(null),
+  invoices: Joi.array().items(Joi.string().trim().min(1).max(100)).allow(null),
+  invoiceNumber: Joi.string().trim().max(100).allow(null, ''),
+  status: Joi.string().valid('arrived', 'delivered', 'skipped').allow(null),
+  latitude: Joi.number().min(-90).max(90).allow(null),
+  longitude: Joi.number().min(-180).max(180).allow(null),
+  gpsLocationName: Joi.string().trim().max(255).allow(null, ''),
+  gpsMileage: Joi.number().min(0).precision(2).allow(null),
+}).min(1);
+
+const approveTripSchema = Joi.object({
+  approved: Joi.boolean().required(),
+  rejectionReason: Joi.string().trim().max(2000).allow(null, ''),
+});
+
+const stopIdParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required(),
+  stopId: Joi.number().integer().positive().required(),
 });
 
 const listTripsQuerySchema = Joi.object({
   page: Joi.number().integer().min(1),
   pageSize: Joi.number().integer().min(1).max(100),
-  sortBy: Joi.string().valid('scheduledDate', 'createdAt', 'status', 'tripNumber'),
+  sortBy: Joi.string().valid('scheduledDate', 'createdAt', 'completedAt', 'status', 'tripNumber'),
   sortOrder: Joi.string().valid('asc', 'desc', 'ASC', 'DESC'),
   search: Joi.string().trim().allow(''),
   status: Joi.string().valid('pending', 'assigned', 'in_progress', 'completed', 'cancelled'),
+  approvalStatus: Joi.string().valid('pending', 'approved', 'rejected'),
   driverId: Joi.number().integer().positive(),
   customerId: Joi.number().integer().positive(),
   dateFrom: Joi.date().iso(),
@@ -66,6 +91,9 @@ module.exports = {
   updateTripSchema,
   assignTripSchema,
   updateTripStatusSchema,
+  updateTripDriverDetailsSchema,
+  approveTripSchema,
   listTripsQuerySchema,
   idParamSchema,
+  stopIdParamSchema,
 };

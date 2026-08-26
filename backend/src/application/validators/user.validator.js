@@ -1,5 +1,14 @@
 const Joi = require('joi');
 
+const driverFields = {
+  nicNumber: Joi.string().trim().min(5).max(20),
+  licenseNumber: Joi.string().trim().min(3).max(50),
+  licenseExpiry: Joi.string().trim(),
+  vehicleNumber: Joi.string().trim().max(30).allow(null, ''),
+  address: Joi.string().trim().max(255).allow(null, ''),
+  driverNotes: Joi.string().trim().max(2000).allow(null, ''),
+};
+
 const createUserSchema = Joi.object({
   roleId: Joi.number().integer().positive().required(),
   firstName: Joi.string().trim().min(1).max(100).required(),
@@ -14,6 +23,8 @@ const createUserSchema = Joi.object({
       'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
     }),
   status: Joi.string().valid('active', 'inactive', 'suspended').default('active'),
+  // Driver-specific fields (required when role is DRIVER, validated at use-case level)
+  ...driverFields,
 });
 
 const updateUserSchema = Joi.object({
@@ -22,6 +33,8 @@ const updateUserSchema = Joi.object({
   lastName: Joi.string().trim().min(1).max(100),
   phone: Joi.string().trim().max(20).allow(null, ''),
   status: Joi.string().valid('active', 'inactive', 'suspended'),
+  // Driver-specific fields
+  ...driverFields,
 }).min(1);
 
 const listUsersQuerySchema = Joi.object({
