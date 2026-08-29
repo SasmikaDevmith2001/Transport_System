@@ -7,7 +7,6 @@ import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import UsersListPage from '../features/users/pages/UsersListPage';
 import CustomersListPage from '../features/customers/pages/CustomersListPage';
 import TripsListPage from '../features/trips/pages/TripsListPage';
-import TripApprovalsPage from '../features/trips/pages/TripApprovalsPage';
 import BusinessTripsPage from '../features/trips/pages/BusinessTripsPage';
 import LocationsListPage from '../features/locations/pages/LocationsListPage';
 import LiveTrackingPage from '../features/tracking/pages/LiveTrackingPage';
@@ -28,10 +27,6 @@ export default function AppRouter() {
 
           <Route element={<ProtectedRoute permissions={['trips:read']} />}>
             <Route path="/business-trips" element={<BusinessTripsPage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute permissions={['trips:update']} />}>
-            <Route path="/trip-approvals" element={<TripApprovalsPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permissions={['trips:update']} />}>

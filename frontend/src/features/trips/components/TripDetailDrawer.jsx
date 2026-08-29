@@ -24,6 +24,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircle';
+import EventIcon from '@mui/icons-material/Event';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import { getCurrentPosition, getDrivingDistanceKm, reverseGeocode } from '../../../utils/gps';
 import { startTracking, stopTracking } from '../../../services/gpsTracker';
 import RouteOptimizationDialog from './RouteOptimizationDialog';
@@ -188,75 +190,109 @@ export default function TripDetailDrawer({
   };
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} sx={{ zIndex: (theme) => theme.zIndex.appBar - 1 }}>
-      <Box sx={{ width: { xs: '100vw', sm: 440 }, p: 3, pt: 10 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
-          <Box>
-            <Typography variant="h6" fontWeight={700}>
-              {trip.tripNumber}
-            </Typography>
-            <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
-              <Chip size="small" sx={{ textTransform: 'capitalize' }} label={trip.status.replace('_', ' ')} color={TRIP_STATUS_COLORS[trip.status]} />
-              {trip.approvalStatus && (
-                <Chip
-                  size="small"
-                  sx={{ textTransform: 'capitalize' }}
-                  label={`Approval: ${trip.approvalStatus}`}
-                  color={trip.approvalStatus === 'approved' ? 'success' : trip.approvalStatus === 'rejected' ? 'error' : 'warning'}
-                  variant="outlined"
-                />
-              )}
-            </Stack>
-          </Box>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          width: { xs: '100vw', sm: 440 },
+          maxWidth: '100%',
+          borderRadius: '0 !important',
+          border: 'none !important',
+          boxShadow: 'none',
+        },
+      }}
+      sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
+    >
+      <Box sx={{ overflowY: 'auto', height: '100%', bgcolor: (t) => (t.palette.mode === 'dark' ? 'background.default' : 'grey.50') }}>
+        {/* Gradient header band */}
+        <Box
+          sx={{
+            position: 'relative',
+            px: { xs: 2, sm: 3 },
+            pt: { xs: 2.5, sm: 3 },
+            pb: { xs: 3, sm: 3.5 },
+            color: 'common.white',
+            background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark} 0%, ${t.palette.primary.main} 55%, ${t.palette.primary.light} 100%)`,
+          }}
+        >
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{ position: 'absolute', top: 12, right: 12, color: 'common.white', bgcolor: 'rgba(255,255,255,0.12)', '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' } }}
+          >
+            <CloseIcon fontSize="small" />
           </IconButton>
-        </Stack>
 
-        <Stack spacing={2}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">Route</Typography>
-            <Typography variant="body1" fontWeight={600}>
-              {trip.origin} → {trip.destination}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {trip.scheduledDate} {trip.scheduledTime ? `at ${trip.scheduledTime.slice(0, 5)}` : ''}
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Stack direction="row" spacing={3}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">Customer</Typography>
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-                <BusinessIcon fontSize="small" color="action" />
-                <Typography variant="body2" fontWeight={600}>
-                  {trip.customer?.companyName || '—'}
-                </Typography>
-              </Stack>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">Driver</Typography>
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-                <PersonIcon fontSize="small" color="action" />
-                <Typography variant="body2" fontWeight={600}>
-                  {trip.driver ? `${trip.driver.firstName} ${trip.driver.lastName}` : 'Not assigned'}
-                </Typography>
-              </Stack>
-            </Box>
+          <Typography variant="overline" sx={{ opacity: 0.75, letterSpacing: 1.2 }}>
+            Trip Details
+          </Typography>
+          <Typography variant="h5" fontWeight={800} sx={{ mb: 1.25, pr: 4 }}>
+            {trip.tripNumber}
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Chip
+              size="small"
+              sx={{ textTransform: 'capitalize', bgcolor: 'rgba(255,255,255,0.16)', color: 'common.white', fontWeight: 700 }}
+              label={trip.status.replace('_', ' ')}
+            />
+            {trip.approvalStatus && (
+              <Chip
+                size="small"
+                variant="outlined"
+                sx={{ textTransform: 'capitalize', color: 'common.white', borderColor: 'rgba(255,255,255,0.5)' }}
+                label={`Approval: ${trip.approvalStatus}`}
+              />
+            )}
           </Stack>
+        </Box>
 
-          {trip.cargoDescription && (
-            <Box>
-              <Typography variant="caption" color="text.secondary">Cargo</Typography>
-              <Typography variant="body2">{trip.cargoDescription}</Typography>
-            </Box>
-          )}
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+          <Stack spacing={2}>
+            {/* Route visual card */}
+            <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <Stack direction="row" spacing={1.5}>
+                <Stack alignItems="center" sx={{ pt: 0.5 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid', borderColor: 'primary.main' }} />
+                  <Box sx={{ flexGrow: 1, width: 2, minHeight: 24, my: 0.5, bgcolor: 'divider' }} />
+                  <LocationOnIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                </Stack>
+                <Stack spacing={1.5} sx={{ flexGrow: 1, minWidth: 0 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Origin</Typography>
+                    <Typography variant="body1" fontWeight={700} noWrap>{trip.origin}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Destination</Typography>
+                    <Typography variant="body1" fontWeight={700} noWrap>{trip.destination}</Typography>
+                  </Box>
+                </Stack>
+              </Stack>
+              <Divider sx={{ my: 1.5 }} />
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                <EventIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  {trip.scheduledDate} {trip.scheduledTime ? `at ${trip.scheduledTime.slice(0, 5)}` : ''}
+                </Typography>
+              </Stack>
+            </Paper>
 
-          <Divider />
+            {/* Info tiles */}
+            <Stack direction="row" spacing={1.5}>
+              <InfoTile icon={<BusinessIcon fontSize="small" />} label="Customer" value={trip.customer?.companyName || '—'} />
+              <InfoTile
+                icon={<PersonIcon fontSize="small" />}
+                label="Driver"
+                value={trip.driver ? `${trip.driver.firstName} ${trip.driver.lastName}` : 'Not assigned'}
+              />
+            </Stack>
 
-          {/* Delivery Stops */}
+            {trip.cargoDescription && (
+              <InfoTile icon={<Inventory2Icon fontSize="small" />} label="Cargo" value={trip.cargoDescription} fullWidth />
+            )}
+
+            {/* Delivery Stops */}
           <Box>
             <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
               Delivery Locations
@@ -571,8 +607,35 @@ export default function TripDetailDrawer({
               }
             }}
           />
-        </Stack>
+          </Stack>
+        </Box>
       </Box>
     </Drawer>
+  );
+}
+
+function InfoTile({ icon, label, value, fullWidth = false }) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 1.5,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        flex: fullWidth ? '1 1 100%' : 1,
+        minWidth: 0,
+      }}
+    >
+      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ color: 'text.secondary', mb: 0.5 }}>
+        {icon}
+        <Typography variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          {label}
+        </Typography>
+      </Stack>
+      <Typography variant="body2" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
+        {value}
+      </Typography>
+    </Paper>
   );
 }
