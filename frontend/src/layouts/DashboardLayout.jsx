@@ -146,6 +146,11 @@ export default function DashboardLayout() {
               <MenuIcon />
             </IconButton>
           )}
+          {!isDesktop && (
+            <Typography variant="subtitle2" fontWeight={700} sx={{ color: 'text.primary' }} noWrap>
+              Anuradha
+            </Typography>
+          )}
           {isDesktop && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <LocalShippingRoundedIcon sx={{ color: 'primary.main', fontSize: 22 }} />
@@ -213,7 +218,7 @@ export default function DashboardLayout() {
         {drawerContent}
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, width: { md: `calc(100% - ${DRAWER_WIDTH}px)` } }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, minWidth: 0 }}>
         <Toolbar />
         <Outlet />
       </Box>
