@@ -1,4 +1,5 @@
 import { Box, Card, CardContent, Typography, Stack, Avatar, Divider, Chip, LinearProgress } from '@mui/material';
+import './DashboardPage.css';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import BadgeIcon from '@mui/icons-material/Badge';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -163,7 +164,7 @@ export default function DashboardPage() {
       </Box>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '24px' }}>
+      <div className="dashboard-stats-grid">
         <StatCard
           label="Total Trips"
           value={totalTrips}
@@ -199,7 +200,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom Section: Recent Activity + Quick Info */}
-      <div style={{ display: 'grid', gridTemplateColumns: '7fr 5fr', gap: '20px' }}>
+      <div className="dashboard-bottom-grid">
         <RecentActivityCard trips={trips} loading={tripsLoading} />
         <QuickInfoCard
           title="Trip Overview"

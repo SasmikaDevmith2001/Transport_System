@@ -24,6 +24,11 @@ import PeopleIcon from '@mui/icons-material/People';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import BusinessIcon from '@mui/icons-material/Business';
 import BadgeIcon from '@mui/icons-material/Badge';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -41,6 +46,11 @@ const ICONS = {
   LocalShipping: LocalShippingIcon,
   Business: BusinessIcon,
   Badge: BadgeIcon,
+  FactCheck: FactCheckIcon,
+  LocationOn: LocationOnIcon,
+  WorkHistory: WorkHistoryIcon,
+  GpsFixed: GpsFixedIcon,
+  Receipt: ReceiptIcon,
 };
 
 const ROLE_LABEL = {
@@ -94,6 +104,7 @@ export default function DashboardLayout() {
 
   const drawerContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Toolbar />
       {brand}
       <Divider />
       <List sx={{ pt: 1.5, flexGrow: 1 }}>
@@ -134,6 +145,11 @@ export default function DashboardLayout() {
             <IconButton edge="start" onClick={() => setMobileOpen(true)}>
               <MenuIcon />
             </IconButton>
+          )}
+          {!isDesktop && (
+            <Typography variant="subtitle2" fontWeight={700} sx={{ color: 'text.primary' }} noWrap>
+              Anuradha
+            </Typography>
           )}
           {isDesktop && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -202,7 +218,7 @@ export default function DashboardLayout() {
         {drawerContent}
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, width: { md: `calc(100% - ${DRAWER_WIDTH}px)` } }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, md: 3 }, width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, minWidth: 0 }}>
         <Toolbar />
         <Outlet />
       </Box>

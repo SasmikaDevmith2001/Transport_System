@@ -125,7 +125,8 @@ export function buildTheme(mode) {
         styleOverrides: {
           paper: {
             backgroundColor: isDark ? '#081527' : '#FFFFFF',
-            borderRight: `1px solid ${isDark ? 'rgba(143,163,191,0.12)' : 'rgba(10,47,92,0.10)'}`,
+            borderRadius: '0 !important',
+            border: 'none',
           },
         },
       },
@@ -155,6 +156,13 @@ export function buildTheme(mode) {
           paper: {
             borderRadius: 14,
             border: `1px solid ${isDark ? 'rgba(148,163,184,0.10)' : 'rgba(15,23,42,0.07)'}`,
+            '@media (max-width: 600px)': {
+              margin: 8,
+              maxHeight: 'calc(100% - 16px)',
+              width: 'calc(100% - 16px)',
+              maxWidth: '100%',
+              borderRadius: 10,
+            },
           },
         },
       },

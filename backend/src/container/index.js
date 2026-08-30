@@ -14,6 +14,7 @@ const refreshTokenRepository = require('../infrastructure/database/repositories/
 const customerRepository = require('../infrastructure/database/repositories/CustomerRepository');
 const driverRepository = require('../infrastructure/database/repositories/DriverRepository');
 const tripRepository = require('../infrastructure/database/repositories/TripRepository');
+const locationRepository = require('../infrastructure/database/repositories/LocationRepository');
 const hasher = require('../infrastructure/auth/BcryptHasher');
 const tokenService = require('../infrastructure/auth/JwtTokenService');
 const logger = require('../infrastructure/logging/WinstonLogger');
@@ -55,7 +56,10 @@ const ListTripsUseCase = require('../application/use-cases/trips/ListTripsUseCas
 const UpdateTripUseCase = require('../application/use-cases/trips/UpdateTripUseCase');
 const AssignTripUseCase = require('../application/use-cases/trips/AssignTripUseCase');
 const UpdateTripStatusUseCase = require('../application/use-cases/trips/UpdateTripStatusUseCase');
+const UpdateTripDriverDetailsUseCase = require('../application/use-cases/trips/UpdateTripDriverDetailsUseCase');
 const DeleteTripUseCase = require('../application/use-cases/trips/DeleteTripUseCase');
+const ApproveTripUseCase = require('../application/use-cases/trips/ApproveTripUseCase');
+const ListPendingApprovalsUseCase = require('../application/use-cases/trips/ListPendingApprovalsUseCase');
 
 // Presentation controllers
 const AuthController = require('../presentation/controllers/auth.controller');
@@ -64,16 +68,18 @@ const RoleController = require('../presentation/controllers/role.controller');
 const CustomerController = require('../presentation/controllers/customer.controller');
 const DriverController = require('../presentation/controllers/driver.controller');
 const TripController = require('../presentation/controllers/trip.controller');
+const LocationController = require('../presentation/controllers/location.controller');
+const TrackingController = require('../presentation/controllers/tracking.controller');
 
 // --- Wire use cases ---
 const loginUseCase = new LoginUseCase(userRepository, roleRepository, refreshTokenRepository, hasher, tokenService, logger);
 const refreshTokenUseCase = new RefreshTokenUseCase(userRepository, roleRepository, refreshTokenRepository, tokenService, logger);
 const logoutUseCase = new LogoutUseCase(refreshTokenRepository, tokenService);
 
-const createUserUseCase = new CreateUserUseCase(userRepository, roleRepository, hasher, logger);
+const createUserUseCase = new CreateUserUseCase(userRepository, roleRepository, hasher, logger, driverRepository);
 const getUserUseCase = new GetUserUseCase(userRepository);
 const listUsersUseCase = new ListUsersUseCase(userRepository);
-const updateUserUseCase = new UpdateUserUseCase(userRepository, roleRepository, logger);
+const updateUserUseCase = new UpdateUserUseCase(userRepository, roleRepository, logger, driverRepository);
 const deleteUserUseCase = new DeleteUserUseCase(userRepository, roleRepository, logger);
 const listRolesUseCase = new ListRolesUseCase(roleRepository);
 
@@ -90,13 +96,16 @@ const listActiveDriversUseCase = new ListActiveDriversUseCase(driverRepository);
 const updateDriverUseCase = new UpdateDriverUseCase(driverRepository, logger);
 const deleteDriverUseCase = new DeleteDriverUseCase(driverRepository, logger);
 
-const createTripUseCase = new CreateTripUseCase(tripRepository, customerRepository, driverRepository, logger);
+const createTripUseCase = new CreateTripUseCase(tripRepository, customerRepository, driverRepository, locationRepository, logger);
 const getTripUseCase = new GetTripUseCase(tripRepository, driverRepository);
 const listTripsUseCase = new ListTripsUseCase(tripRepository, driverRepository);
 const updateTripUseCase = new UpdateTripUseCase(tripRepository, logger);
 const assignTripUseCase = new AssignTripUseCase(tripRepository, driverRepository, logger);
 const updateTripStatusUseCase = new UpdateTripStatusUseCase(tripRepository, driverRepository, logger);
+const updateTripDriverDetailsUseCase = new UpdateTripDriverDetailsUseCase(tripRepository, driverRepository, logger);
 const deleteTripUseCase = new DeleteTripUseCase(tripRepository, logger);
+const approveTripUseCase = new ApproveTripUseCase(tripRepository, logger);
+const listPendingApprovalsUseCase = new ListPendingApprovalsUseCase(tripRepository);
 
 // --- Wire controllers ---
 const authController = new AuthController({ loginUseCase, refreshTokenUseCase, logoutUseCase, getUserUseCase });
@@ -122,6 +131,8 @@ const driverController = new DriverController({
   listActiveDriversUseCase,
   updateDriverUseCase,
   deleteDriverUseCase,
+  userRepository,
+  driverRepository,
 });
 const tripController = new TripController({
   createTripUseCase,
@@ -130,8 +141,14 @@ const tripController = new TripController({
   updateTripUseCase,
   assignTripUseCase,
   updateTripStatusUseCase,
+  updateTripDriverDetailsUseCase,
   deleteTripUseCase,
+  approveTripUseCase,
+  listPendingApprovalsUseCase,
 });
+
+const locationController = new LocationController({ locationRepository });
+const trackingController = new TrackingController();
 
 module.exports = {
   authController,
@@ -140,5 +157,7 @@ module.exports = {
   customerController,
   driverController,
   tripController,
+  locationController,
+  trackingController,
   logger,
 };

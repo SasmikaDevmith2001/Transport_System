@@ -17,6 +17,14 @@ export function useTrip(id) {
   });
 }
 
+export function usePendingApprovals(params) {
+  return useQuery({
+    queryKey: ['trips', 'pending-approval', params],
+    queryFn: () => tripsApi.listPendingApproval(params),
+    keepPreviousData: true,
+  });
+}
+
 export function useCreateTrip() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -44,7 +52,23 @@ export function useAssignTrip() {
 export function useUpdateTripStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }) => tripsApi.updateStatus(id, status),
+    mutationFn: ({ id, status, gps }) => tripsApi.updateStatus(id, status, gps),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
+  });
+}
+
+export function useUpdateTripDriverDetails() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tripId, stopId, payload }) => tripsApi.updateStopDetails(tripId, stopId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
+  });
+}
+
+export function useApproveTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => tripsApi.approveTrip(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
   });
 }

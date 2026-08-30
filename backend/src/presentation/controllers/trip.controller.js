@@ -10,7 +10,10 @@ class TripController {
     updateTripUseCase,
     assignTripUseCase,
     updateTripStatusUseCase,
+    updateTripDriverDetailsUseCase,
     deleteTripUseCase,
+    approveTripUseCase,
+    listPendingApprovalsUseCase,
   }) {
     this.createTripUseCase = createTripUseCase;
     this.getTripUseCase = getTripUseCase;
@@ -18,7 +21,10 @@ class TripController {
     this.updateTripUseCase = updateTripUseCase;
     this.assignTripUseCase = assignTripUseCase;
     this.updateTripStatusUseCase = updateTripStatusUseCase;
+    this.updateTripDriverDetailsUseCase = updateTripDriverDetailsUseCase;
     this.deleteTripUseCase = deleteTripUseCase;
+    this.approveTripUseCase = approveTripUseCase;
+    this.listPendingApprovalsUseCase = listPendingApprovalsUseCase;
   }
 
   create = async (req, res) => {
@@ -43,6 +49,7 @@ class TripController {
     const options = {
       ...pagination,
       status: req.query.status,
+      approvalStatus: req.query.approvalStatus,
       driverId: req.query.driverId,
       customerId: req.query.customerId,
       dateFrom: req.query.dateFrom,
@@ -74,10 +81,45 @@ class TripController {
   };
 
   updateStatus = async (req, res) => {
-    const trip = await this.updateTripStatusUseCase.execute(req.params.id, req.body.status, req.user);
+    const trip = await this.updateTripStatusUseCase.execute(req.params.id, req.body.status, req.user, {
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
+    });
     return ApiResponse.success(res, {
       message: 'Trip status updated successfully',
       data: toTripResponseDto(trip),
+    });
+  };
+
+  updateDriverDetails = async (req, res) => {
+    const trip = await this.updateTripDriverDetailsUseCase.execute(
+      Number(req.params.id),
+      Number(req.params.stopId),
+      req.body,
+      req.user
+    );
+    return ApiResponse.success(res, {
+      message: 'Stop details updated successfully',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  approve = async (req, res) => {
+    const trip = await this.approveTripUseCase.execute(req.params.id, req.body, req.user);
+    return ApiResponse.success(res, {
+      message: req.body.approved ? 'Trip approved successfully' : 'Trip rejected',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  listPendingApproval = async (req, res) => {
+    const pagination = parsePagination(req.query);
+    const { rows, total } = await this.listPendingApprovalsUseCase.execute(pagination);
+
+    return ApiResponse.success(res, {
+      message: 'Pending approvals retrieved successfully',
+      data: rows.map(toTripResponseDto),
+      meta: buildMeta({ page: pagination.page, pageSize: pagination.pageSize, total }),
     });
   };
 
