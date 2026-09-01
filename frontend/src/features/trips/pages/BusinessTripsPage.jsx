@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -17,6 +17,7 @@ import {
   Divider,
   Tabs,
   Tab,
+  CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -25,14 +26,39 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
 import TripDetailDrawer from '../components/TripDetailDrawer';
 import { useTripsList, usePendingApprovals, useApproveTrip } from '../hooks/useTrips';
 import { useAuth } from '../../../contexts/AuthContext';
+import { tripsApi } from '../api/tripsApi';
+import { exportTripReportsToExcel } from '../utils/tripReportExcel';
 
 const APPROVAL_COLORS = { pending: 'warning', approved: 'success', rejected: 'error' };
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+// Human label for a "YYYY-MM" value, e.g. "August 2026".
+function monthLabelFromValue(value) {
+  if (!value) return 'All Months';
+  const [y, m] = value.split('-').map(Number);
+  return `${MONTH_NAMES[m - 1]} ${y}`;
+}
+
+// Return { dateFrom, dateTo } (YYYY-MM-DD) for a given "YYYY-MM" value.
+function monthToRange(value) {
+  if (!value) return { dateFrom: undefined, dateTo: undefined };
+  const [y, m] = value.split('-').map(Number);
+  const first = new Date(y, m - 1, 1);
+  const last = new Date(y, m, 0); // day 0 of next month = last day of this month
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { dateFrom: iso(first), dateTo: iso(last) };
+}
 
 function getMileageDiffColor(driverMileage, gpsMileage) {
   if (driverMileage == null || gpsMileage == null) return 'default';
@@ -64,6 +90,12 @@ export default function BusinessTripsPage() {
   const [sortBy, setSortBy] = useState('completedAt');
   const [sortOrder, setSortOrder] = useState('DESC');
   const [viewingTrip, setViewingTrip] = useState(null);
+  const [month, setMonth] = useState(''); // 'YYYY-MM' or '' for all
+  const [exporting, setExporting] = useState(false);
+  const currentMonth = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
 
   // Approvals state
   const [appPage, setAppPage] = useState(1);
@@ -75,7 +107,17 @@ export default function BusinessTripsPage() {
   const [expandedStop, setExpandedStop] = useState(null);
 
   // Data
-  const completedParams = { page, pageSize, search: search || undefined, status: 'completed', sortBy, sortOrder };
+  const { dateFrom, dateTo } = monthToRange(month);
+  const completedParams = {
+    page,
+    pageSize,
+    search: search || undefined,
+    status: 'completed',
+    sortBy,
+    sortOrder,
+    dateFrom,
+    dateTo,
+  };
   const { data: completedData, isLoading: completedLoading } = useTripsList(completedParams);
   const { data: approvalsData, isLoading: approvalsLoading } = usePendingApprovals({ page: appPage, pageSize: appPageSize });
   const approveTrip = useApproveTrip();
@@ -111,6 +153,31 @@ export default function BusinessTripsPage() {
   const handleSortChange = (field) => {
     if (sortBy === field) setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
     else { setSortBy(field); setSortOrder('ASC'); }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const monthLabel = monthLabelFromValue(month);
+      const trips = await tripsApi.listAll({
+        status: 'completed',
+        search: search || undefined,
+        sortBy: 'completedAt',
+        sortOrder: 'ASC',
+        dateFrom,
+        dateTo,
+      });
+      if (!trips.length) {
+        enqueueSnackbar('No completed trips found for the selected period.', { variant: 'info' });
+        return;
+      }
+      await exportTripReportsToExcel(trips, { monthLabel });
+      enqueueSnackbar(`Exported ${trips.length} trip(s) to Excel.`, { variant: 'success' });
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || err.message || 'Failed to export', { variant: 'error' });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleApprove = async (tripId) => {
@@ -150,7 +217,7 @@ export default function BusinessTripsPage() {
       {/* Tab 0: Completed Trips */}
       {tab === 0 && (
         <>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }} alignItems={{ sm: 'center' }}>
             <TextField
               placeholder="Search by trip number, origin or destination"
               size="small"
@@ -159,6 +226,32 @@ export default function BusinessTripsPage() {
               sx={{ width: { xs: '100%', sm: 340 } }}
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
             />
+            <TextField
+              type="month"
+              label="Month"
+              size="small"
+              value={month}
+              onChange={(e) => { setPage(1); setMonth(e.target.value); }}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ max: currentMonth }}
+              sx={{ width: { xs: '100%', sm: 190 } }}
+            />
+            {month && (
+              <Button size="small" onClick={() => { setPage(1); setMonth(''); }} sx={{ whiteSpace: 'nowrap' }}>
+                Clear
+              </Button>
+            )}
+            <Box sx={{ flexGrow: 1 }} />
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />}
+              onClick={handleExport}
+              disabled={exporting}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              {exporting ? 'Exporting...' : 'Export to Excel'}
+            </Button>
           </Stack>
           <DataTable
             columns={completedColumns}

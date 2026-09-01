@@ -396,6 +396,30 @@ export default function TripDetailDrawer({
                                     <Typography variant="body2" fontWeight={700}>{stop.driverMileage} km</Typography>
                                   </Stack>
                                 )}
+                                {!isDriver && stop.gpsMileage != null && stop.driverMileage != null && (() => {
+                                  const diff = Number(stop.driverMileage) - Number(stop.gpsMileage);
+                                  const absDiff = Math.abs(diff);
+                                  const pct = Number(stop.gpsMileage) > 0 ? (absDiff / Number(stop.gpsMileage)) * 100 : 0;
+                                  const isOver = diff > 0;
+                                  const diffColor = absDiff < 0.01 ? 'success.main' : pct > 10 ? 'error.main' : 'warning.main';
+                                  return (
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Difference:</Typography>
+                                      <Typography variant="body2" fontWeight={700} sx={{ color: diffColor }}>
+                                        {absDiff < 0.01 ? 'No difference' : `${isOver ? '+' : '−'}${absDiff.toFixed(2)} km (${pct.toFixed(1)}%)`}
+                                      </Typography>
+                                      {absDiff >= 0.01 && (
+                                        <Chip
+                                          size="small"
+                                          label={isOver ? 'Driver over' : 'Driver under'}
+                                          color={pct > 10 ? 'error' : 'warning'}
+                                          variant="outlined"
+                                          sx={{ height: 18, fontSize: 9 }}
+                                        />
+                                      )}
+                                    </Stack>
+                                  );
+                                })()}
                                 {!isDriver && stop.gpsLocationName && (
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Location:</Typography>
