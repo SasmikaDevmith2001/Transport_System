@@ -26,7 +26,14 @@ export default function TripInvoiceDialog({ open, trip, onClose }) {
     const content = invoiceRef.current;
     if (!content || !trip) return;
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'width=900,height=650');
+    // Popup blocked — tell the user instead of silently failing.
+    if (!printWindow) {
+      // eslint-disable-next-line no-alert
+      alert('Please allow pop-ups for this site to print the invoice.');
+      return;
+    }
+
     printWindow.document.write(`
       <html>
         <head>
@@ -51,9 +58,23 @@ export default function TripInvoiceDialog({ open, trip, onClose }) {
       </html>
     `);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+
+    // Wait for the new document (and its content) to finish rendering before
+    // invoking print, otherwise the dialog can open blank or the window closes
+    // too early. Close after printing via onafterprint.
+    const triggerPrint = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+    printWindow.onafterprint = () => printWindow.close();
+
+    if (printWindow.document.readyState === 'complete') {
+      setTimeout(triggerPrint, 250);
+    } else {
+      printWindow.onload = () => setTimeout(triggerPrint, 100);
+      // Fallback in case onload doesn't fire for a written document.
+      setTimeout(triggerPrint, 500);
+    }
   }, [trip]);
 
   if (!trip) return null;
