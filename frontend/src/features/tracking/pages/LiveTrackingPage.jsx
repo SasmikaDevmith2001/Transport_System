@@ -96,37 +96,39 @@ export default function LiveTrackingPage() {
                 position={{ lat: selectedDriver.position.latitude, lng: selectedDriver.position.longitude }}
                 onCloseClick={() => setSelectedDriver(null)}
               >
-                <Box sx={{ p: 0.5, minWidth: 180 }}>
+                {/* Google InfoWindow always renders on a white background, so
+                    force dark text here regardless of the app's dark mode. */}
+                <Box sx={{ p: 0.5, minWidth: 180, color: '#1f2937' }}>
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                    <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: '#1976d2' }}>
+                    <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: '#1976d2', color: '#fff' }}>
                       {selectedDriver.driver.name.split(' ').map((n) => n[0]).join('')}
                     </Avatar>
                     <Box>
-                      <Typography variant="body2" fontWeight={700}>{selectedDriver.driver.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">{selectedDriver.driver.phone}</Typography>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: '#111827' }}>{selectedDriver.driver.name}</Typography>
+                      <Typography variant="caption" sx={{ color: '#6b7280' }}>{selectedDriver.driver.phone}</Typography>
                     </Box>
                   </Stack>
-                  <Stack spacing={0.5}>
-                    <Typography variant="caption">
+                  <Stack spacing={0.5} sx={{ color: '#374151' }}>
+                    <Typography variant="caption" sx={{ color: 'inherit' }}>
                       <strong>Trip:</strong> {selectedDriver.tripNumber}
                     </Typography>
-                    <Typography variant="caption">
+                    <Typography variant="caption" sx={{ color: 'inherit' }}>
                       <strong>Route:</strong> {selectedDriver.origin} → {selectedDriver.destination}
                     </Typography>
                     {selectedDriver.driver.vehicleNumber && (
-                      <Typography variant="caption">
+                      <Typography variant="caption" sx={{ color: 'inherit' }}>
                         <strong>Vehicle:</strong> {selectedDriver.driver.vehicleNumber}
                       </Typography>
                     )}
                     {selectedDriver.position.speed != null && (
                       <Stack direction="row" spacing={0.5} alignItems="center">
-                        <SpeedIcon sx={{ fontSize: 14 }} />
-                        <Typography variant="caption" fontWeight={600}>
+                        <SpeedIcon sx={{ fontSize: 14, color: '#374151' }} />
+                        <Typography variant="caption" fontWeight={600} sx={{ color: 'inherit' }}>
                           {selectedDriver.position.speed} km/h
                         </Typography>
                       </Stack>
                     )}
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
                       Last seen: {new Date(selectedDriver.position.recordedAt).toLocaleTimeString()}
                     </Typography>
                   </Stack>

@@ -219,9 +219,15 @@ class TripRepository extends ITripRepository {
   async generateNextTripNumber() {
     const year = new Date().getFullYear();
     const prefix = `TRP-${year}-`;
+    // IMPORTANT: include soft-deleted rows (paranoid: false) and order by the
+    // trip_number itself. The table is paranoid, so ordering by id while
+    // excluding soft-deleted trips can return an older row and produce a
+    // sequence number that is already taken by a (soft-)deleted trip, which
+    // then violates the unique constraint on trip_number.
     const last = await TripModel.findOne({
       where: { tripNumber: { [Op.like]: `${prefix}%` } },
-      order: [['id', 'DESC']],
+      order: [['tripNumber', 'DESC']],
+      paranoid: false,
     });
 
     let nextSeq = 1;

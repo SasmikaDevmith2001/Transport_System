@@ -115,6 +115,8 @@ export default function CustomersListPage() {
                 {hasPermission('customers:create') && (
                   <Button
                     size="small"
+                    variant="outlined"
+                    color="primary"
                     startIcon={<AddIcon />}
                     onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
                     sx={{ alignSelf: 'flex-start', mt: 0.5 }}
@@ -206,7 +208,7 @@ export default function CustomersListPage() {
           size="small"
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 420 } }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField

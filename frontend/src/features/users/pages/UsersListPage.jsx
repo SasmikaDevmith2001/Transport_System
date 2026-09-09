@@ -138,7 +138,7 @@ export default function UsersListPage() {
           setPage(1);
           setSearch(e.target.value);
         }}
-        sx={{ mb: 2, width: { xs: '100%', sm: 340 } }}
+        sx={{ mb: 2, width: { xs: '100%', sm: 360 } }}
         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
       />
 

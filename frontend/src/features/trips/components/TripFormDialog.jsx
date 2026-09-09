@@ -300,9 +300,10 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                     label="Scheduled Date"
                     fullWidth
                     size="small"
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{ inputLabel: { shrink: true } }}
                     error={!!errors.scheduledDate}
                     helperText={errors.scheduledDate?.message}
+                    sx={{ '& .MuiInputLabel-root': { bgcolor: 'background.paper', px: 0.5 } }}
                   />
                 )}
               />
@@ -310,7 +311,15 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                 name="scheduledTime"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} type="time" label="Scheduled Time" fullWidth size="small" InputLabelProps={{ shrink: true }} />
+                  <TextField
+                    {...field}
+                    type="time"
+                    label="Scheduled Time"
+                    fullWidth
+                    size="small"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{ '& .MuiInputLabel-root': { bgcolor: 'background.paper', px: 0.5 } }}
+                  />
                 )}
               />
             </Stack>
