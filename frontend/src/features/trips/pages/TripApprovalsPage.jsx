@@ -130,6 +130,7 @@ export default function TripApprovalsPage() {
   return (
     <Box>
       <PageHeader
+        icon={<GpsFixedIcon fontSize="medium" />}
         title="Trip Approvals"
         description="Review completed trips and approve or reject them based on mileage verification."
       />

@@ -27,6 +27,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -205,6 +206,7 @@ export default function BusinessTripsPage() {
   return (
     <Box>
       <PageHeader
+        icon={<WorkHistoryIcon fontSize="medium" />}
         title="Trip Reports"
         description="Completed trips, mileage details, and approval management."
       />

@@ -7,6 +7,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAddAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -23,6 +24,7 @@ import {
   useUpdateTripStatus,
   useUpdateTripDriverDetails,
   useDeleteTrip,
+  useSetEmergencyStop,
 } from '../hooks/useTrips';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -64,6 +66,7 @@ export default function TripsListPage() {
   const updateStatus = useUpdateTripStatus();
   const updateDriverDetails = useUpdateTripDriverDetails();
   const deleteTrip = useDeleteTrip();
+  const setEmergencyStop = useSetEmergencyStop();
 
   const columns = [
     {
@@ -177,6 +180,16 @@ export default function TripsListPage() {
     }
   };
 
+  const handleSetEmergencyStop = async (active) => {
+    try {
+      const updated = await setEmergencyStop.mutateAsync({ id: viewingTrip.id, payload: { active } });
+      enqueueSnackbar(active ? 'Emergency stop activated' : 'Emergency stop cleared', { variant: active ? 'warning' : 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to update emergency stop', { variant: 'error' });
+    }
+  };
+
   const handleUpdateDriverDetails = async (stopId, payload) => {
     try {
       const updated = await updateDriverDetails.mutateAsync({ tripId: viewingTrip.id, stopId, payload });
@@ -200,6 +213,7 @@ export default function TripsListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<LocalShippingIcon fontSize="medium" />}
         title={isDriver ? 'My Trips' : 'Trip Management'}
         description={
           isDriver
@@ -280,11 +294,13 @@ export default function TripsListPage() {
         onClose={() => setViewingTrip(null)}
         onAdvanceStatus={handleAdvanceStatus}
         onUpdateStopDetails={handleUpdateDriverDetails}
+        onSetEmergencyStop={handleSetEmergencyStop}
         canAdvance={hasPermission('trips:update') || isDriver}
         canEditStops={isDriver || hasPermission('trips:update')}
         isDriver={isDriver}
         advancing={updateStatus.isPending}
         savingStop={updateDriverDetails.isPending}
+        settingEmergency={setEmergencyStop.isPending}
       />
 
       <ConfirmDialog

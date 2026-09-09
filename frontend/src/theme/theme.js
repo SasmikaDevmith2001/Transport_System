@@ -19,34 +19,36 @@ const NoTransition = forwardRef(function NoTransition({ children, in: inProp }, 
 export function buildTheme(mode) {
   const isDark = mode === 'dark';
 
-  const navy = {
-    main: '#0A2F5C',
-    light: '#1E4D85',
-    dark: '#061D3B',
+  // Transport-brand blue: sky -> blue -> deep navy, matching the new
+  // login / dashboard / sidebar design.
+  const blue = {
+    main: '#2563EB',
+    light: '#3B82F6',
+    dark: '#1E40AF',
     contrastText: '#FFFFFF',
   };
 
   return createTheme({
     palette: {
       mode,
-      primary: navy,
-      secondary: navy,
+      primary: blue,
+      secondary: { main: '#0EA5E9', light: '#38BDF8', dark: '#0284C7', contrastText: '#FFFFFF' },
       success: { main: '#16A34A' },
       warning: { main: '#D97706' },
       error: { main: '#DC2626' },
-      info: { main: '#0A2F5C' },
+      info: { main: '#0EA5E9' },
       background: {
-        default: isDark ? '#0A1220' : '#FFFFFF',
-        paper: isDark ? '#0F1B2E' : '#FFFFFF',
+        default: isDark ? '#0B1220' : '#F1F5F9',
+        paper: isDark ? '#1E293B' : '#FFFFFF',
       },
       text: {
-        primary: isDark ? '#EEF2F8' : '#0F1A2B',
-        secondary: isDark ? '#8FA3BF' : '#5B6B85',
+        primary: isDark ? '#E2E8F0' : '#0F1A2B',
+        secondary: isDark ? '#94A3B8' : '#64748B',
       },
-      divider: isDark ? 'rgba(143,163,191,0.14)' : 'rgba(10,47,92,0.12)',
+      divider: isDark ? 'rgba(148,163,184,0.16)' : 'rgba(37,99,235,0.12)',
     },
     shape: {
-      borderRadius: 8,
+      borderRadius: 10,
     },
     typography: {
       fontFamily: ['"Inter Variable"', '"Inter"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'].join(','),
@@ -59,17 +61,23 @@ export function buildTheme(mode) {
     },
     shadows: [
       'none',
-      '0px 1px 2px rgba(10,47,92,0.06)',
-      '0px 2px 6px rgba(10,47,92,0.08)',
-      '0px 4px 10px rgba(10,47,92,0.08)',
-      ...Array(21).fill('0px 8px 24px rgba(10,47,92,0.10)'),
+      '0px 1px 2px rgba(37,99,235,0.06)',
+      '0px 2px 8px rgba(37,99,235,0.08)',
+      '0px 6px 16px rgba(37,99,235,0.10)',
+      ...Array(21).fill('0px 12px 28px rgba(37,99,235,0.12)'),
     ],
     components: {
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
-          root: { borderRadius: 6, paddingInline: 16 },
+          root: { borderRadius: 9, paddingInline: 18 },
           sizeMedium: { paddingTop: 8, paddingBottom: 8 },
+          containedPrimary: {
+            background: 'linear-gradient(135deg, #0EA5E9 0%, #2563EB 60%, #1E40AF 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #0284C7 0%, #1D4ED8 60%, #1E3A8A 100%)',
+            },
+          },
         },
       },
       MuiPaper: {
@@ -80,8 +88,8 @@ export function buildTheme(mode) {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            border: `1px solid ${isDark ? 'rgba(143,163,191,0.12)' : 'rgba(10,47,92,0.10)'}`,
+            borderRadius: 16,
+            border: `1px solid ${isDark ? 'rgba(148,163,184,0.14)' : 'rgba(37,99,235,0.10)'}`,
           },
         },
       },
@@ -93,8 +101,8 @@ export function buildTheme(mode) {
               fontSize: 12.5,
               textTransform: 'uppercase',
               letterSpacing: 0.4,
-              color: isDark ? '#8FA3BF' : '#5B6B85',
-              backgroundColor: isDark ? 'rgba(143,163,191,0.04)' : 'rgba(10,47,92,0.03)',
+              color: isDark ? '#94A3B8' : '#64748B',
+              backgroundColor: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(37,99,235,0.04)',
             },
           },
         },
@@ -103,14 +111,14 @@ export function buildTheme(mode) {
         styleOverrides: {
           root: {
             '&:hover': {
-              backgroundColor: isDark ? 'rgba(143,163,191,0.06)' : 'rgba(10,47,92,0.03)',
+              backgroundColor: isDark ? 'rgba(148,163,184,0.06)' : 'rgba(37,99,235,0.04)',
             },
           },
         },
       },
       MuiChip: {
         styleOverrides: {
-          root: { fontWeight: 600, borderRadius: 6 },
+          root: { fontWeight: 600, borderRadius: 8 },
         },
       },
       MuiTextField: {
@@ -118,7 +126,7 @@ export function buildTheme(mode) {
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { borderRadius: 6 },
+          root: { borderRadius: 10 },
         },
       },
       MuiDrawer: {

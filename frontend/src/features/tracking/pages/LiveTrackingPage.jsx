@@ -3,6 +3,7 @@ import { Box, Typography, Stack, Chip, Paper, Avatar, IconButton } from '@mui/ma
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import SpeedIcon from '@mui/icons-material/Speed';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import apiClient from '../../../services/apiClient';
@@ -41,6 +42,7 @@ export default function LiveTrackingPage() {
   return (
     <Box>
       <PageHeader
+        icon={<GpsFixedIcon fontSize="medium" />}
         title="Live Tracking"
         description="Real-time location of all active drivers on the road."
         actions={

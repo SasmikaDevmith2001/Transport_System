@@ -28,4 +28,5 @@ export const tripsApi = {
   remove: (id) => apiClient.delete(`/trips/${id}`).then((res) => res.data),
   listPendingApproval: (params) => apiClient.get('/trips/pending-approval', { params }).then((res) => res.data),
   approveTrip: (id, payload) => apiClient.patch(`/trips/${id}/approve`, payload).then((res) => res.data.data),
+  setEmergencyStop: (id, payload) => apiClient.patch(`/trips/${id}/emergency-stop`, payload).then((res) => res.data.data),
 };

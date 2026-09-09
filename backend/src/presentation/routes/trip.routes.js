@@ -10,6 +10,7 @@ const {
   updateTripStatusSchema,
   updateTripDriverDetailsSchema,
   approveTripSchema,
+  emergencyStopSchema,
   listTripsQuerySchema,
   idParamSchema,
   stopIdParamSchema,
@@ -93,6 +94,15 @@ module.exports = (tripController) => {
     validate(idParamSchema, 'params'),
     validate(approveTripSchema),
     asyncHandler(tripController.approve)
+  );
+
+  // Emergency stop toggled by the driver (own trip) or admin. Never automatic.
+  router.patch(
+    '/:id/emergency-stop',
+    authorizePermissions('trips:update', 'trips:read'),
+    validate(idParamSchema, 'params'),
+    validate(emergencyStopSchema),
+    asyncHandler(tripController.setEmergencyStop)
   );
 
   router.delete(

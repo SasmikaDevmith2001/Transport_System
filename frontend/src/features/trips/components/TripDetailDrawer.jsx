@@ -26,6 +26,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircle';
 import EventIcon from '@mui/icons-material/Event';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { getCurrentPosition, getDrivingDistanceKm, reverseGeocode } from '../../../utils/gps';
 import { startTracking, stopTracking } from '../../../services/gpsTracker';
 import RouteOptimizationDialog from './RouteOptimizationDialog';
@@ -56,11 +57,13 @@ export default function TripDetailDrawer({
   onClose,
   onAdvanceStatus,
   onUpdateStopDetails,
+  onSetEmergencyStop,
   canAdvance = false,
   canEditStops = false,
   isDriver = false,
   advancing = false,
   savingStop = false,
+  settingEmergency = false,
 }) {
   const [expandedStop, setExpandedStop] = useState(null);
   const [stopEdits, setStopEdits] = useState({});
@@ -316,7 +319,12 @@ export default function TripDetailDrawer({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: isDelivered ? 'success.light' : isCurrentStop ? 'primary.light' : 'divider',
-                        bgcolor: isDelivered ? 'success.50' : isCurrentStop ? 'primary.50' : 'background.paper',
+                        bgcolor: (t) => {
+                          const dark = t.palette.mode === 'dark';
+                          if (isDelivered) return dark ? 'rgba(34,197,94,0.12)' : 'success.50';
+                          if (isCurrentStop) return dark ? 'rgba(59,130,246,0.12)' : 'primary.50';
+                          return 'background.paper';
+                        },
                         opacity: isLockedFuture ? 0.6 : 1,
                       }}
                     >
@@ -381,7 +389,16 @@ export default function TripDetailDrawer({
 
                           {/* Show GPS verification data for delivered stops */}
                           {isDelivered && (
-                            <Paper elevation={0} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
+                            <Paper
+                              elevation={0}
+                              sx={{
+                                p: 1.5,
+                                borderRadius: 1.5,
+                                bgcolor: (t) => (t.palette.mode === 'dark' ? 'rgba(148,163,184,0.08)' : 'grey.50'),
+                                border: '1px solid',
+                                borderColor: 'divider',
+                              }}
+                            >
                               <Stack spacing={0.5}>
                                 {!isDriver && stop.gpsMileage != null && (
                                   <Stack direction="row" spacing={1} alignItems="center">
@@ -550,6 +567,49 @@ export default function TripDetailDrawer({
                 <Typography variant="caption" color="text.secondary">Remarks</Typography>
                 <Typography variant="body2">{trip.remarks}</Typography>
               </Box>
+            </>
+          )}
+
+          {/* Emergency stop toggle — shown while the trip is in progress */}
+          {onSetEmergencyStop && trip.status === 'in_progress' && (
+            <>
+              <Divider />
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: trip.emergencyStop ? 'error.light' : 'divider',
+                  bgcolor: (t) =>
+                    trip.emergencyStop
+                      ? (t.palette.mode === 'dark' ? 'rgba(220,38,38,0.14)' : 'error.50')
+                      : 'background.paper',
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <ReportProblemIcon color={trip.emergencyStop ? 'error' : 'warning'} />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="body2" fontWeight={700}>
+                      {trip.emergencyStop ? 'Emergency Stop Active' : 'Emergency Stop'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {trip.emergencyStop
+                        ? 'Admin has been notified you are stopped.'
+                        : 'Turn on if you need to stop during the trip.'}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant={trip.emergencyStop ? 'outlined' : 'contained'}
+                    color="error"
+                    size="small"
+                    disabled={settingEmergency}
+                    onClick={() => onSetEmergencyStop(!trip.emergencyStop)}
+                  >
+                    {settingEmergency ? '...' : trip.emergencyStop ? 'Clear' : 'Activate'}
+                  </Button>
+                </Stack>
+              </Paper>
             </>
           )}
 
