@@ -20,13 +20,13 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RouteIcon from '@mui/icons-material/Route';
 import NotesIcon from '@mui/icons-material/Notes';
 import StraightenIcon from '@mui/icons-material/Straighten';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useCustomersList } from '../../customers/hooks/useCustomers';
 import { useActiveLocations } from '../../locations/hooks/useLocations';
 import { getDrivingDistanceKm } from '../../../utils/gps';
@@ -224,22 +224,12 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main' }}>
-            {isEdit ? `Edit Trip ${trip?.tripNumber}` : 'New Trip'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {isEdit ? 'Update trip details below' : 'Fill in the details to create a new trip'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider sx={{ mx: 0 }} />
+      <DialogHeader
+        icon={<LocalShippingIcon />}
+        title={isEdit ? `Edit Trip ${trip?.tripNumber}` : 'New Trip'}
+        subtitle={isEdit ? 'Update trip details below' : 'Fill in the details to create a new trip'}
+        onClose={onClose}
+      />
 
       <DialogContent sx={{ px: 3, py: 3, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         {/* Section: Basic Trip Info */}

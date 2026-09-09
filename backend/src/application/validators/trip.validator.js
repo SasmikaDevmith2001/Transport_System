@@ -63,6 +63,11 @@ const approveTripSchema = Joi.object({
   rejectionReason: Joi.string().trim().max(2000).allow(null, ''),
 });
 
+const emergencyStopSchema = Joi.object({
+  active: Joi.boolean().required(),
+  reason: Joi.string().trim().max(255).allow(null, ''),
+});
+
 const stopIdParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
   stopId: Joi.number().integer().positive().required(),
@@ -93,6 +98,7 @@ module.exports = {
   updateTripStatusSchema,
   updateTripDriverDetailsSchema,
   approveTripSchema,
+  emergencyStopSchema,
   listTripsQuerySchema,
   idParamSchema,
   stopIdParamSchema,

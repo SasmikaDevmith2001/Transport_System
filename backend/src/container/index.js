@@ -60,6 +60,7 @@ const UpdateTripDriverDetailsUseCase = require('../application/use-cases/trips/U
 const DeleteTripUseCase = require('../application/use-cases/trips/DeleteTripUseCase');
 const ApproveTripUseCase = require('../application/use-cases/trips/ApproveTripUseCase');
 const ListPendingApprovalsUseCase = require('../application/use-cases/trips/ListPendingApprovalsUseCase');
+const SetEmergencyStopUseCase = require('../application/use-cases/trips/SetEmergencyStopUseCase');
 
 // Presentation controllers
 const AuthController = require('../presentation/controllers/auth.controller');
@@ -106,6 +107,7 @@ const updateTripDriverDetailsUseCase = new UpdateTripDriverDetailsUseCase(tripRe
 const deleteTripUseCase = new DeleteTripUseCase(tripRepository, logger);
 const approveTripUseCase = new ApproveTripUseCase(tripRepository, logger);
 const listPendingApprovalsUseCase = new ListPendingApprovalsUseCase(tripRepository);
+const setEmergencyStopUseCase = new SetEmergencyStopUseCase(tripRepository, driverRepository, logger);
 
 // --- Wire controllers ---
 const authController = new AuthController({ loginUseCase, refreshTokenUseCase, logoutUseCase, getUserUseCase });
@@ -145,6 +147,7 @@ const tripController = new TripController({
   deleteTripUseCase,
   approveTripUseCase,
   listPendingApprovalsUseCase,
+  setEmergencyStopUseCase,
 });
 
 const locationController = new LocationController({ locationRepository });

@@ -18,11 +18,12 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LinkIcon from '@mui/icons-material/Link';
+import BadgeIcon from '@mui/icons-material/Badge';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useLinkableDriverUsers } from '../hooks/useDrivers';
 
 const driverSchema = Joi.object({
@@ -116,22 +117,12 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main' }}>
-            {isEdit ? 'Edit Driver' : 'New Driver'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {isEdit ? 'Update driver information below' : 'Fill in the details to register a new driver'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider sx={{ mx: 0 }} />
+      <DialogHeader
+        icon={<BadgeIcon />}
+        title={isEdit ? 'Edit Driver' : 'New Driver'}
+        subtitle={isEdit ? 'Update driver information below' : 'Fill in the details to register a new driver'}
+        onClose={onClose}
+      />
 
       <DialogContent sx={{ px: 3, py: 3, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         {/* Section: Link User Account */}

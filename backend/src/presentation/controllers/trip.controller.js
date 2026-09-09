@@ -14,6 +14,7 @@ class TripController {
     deleteTripUseCase,
     approveTripUseCase,
     listPendingApprovalsUseCase,
+    setEmergencyStopUseCase,
   }) {
     this.createTripUseCase = createTripUseCase;
     this.getTripUseCase = getTripUseCase;
@@ -25,6 +26,7 @@ class TripController {
     this.deleteTripUseCase = deleteTripUseCase;
     this.approveTripUseCase = approveTripUseCase;
     this.listPendingApprovalsUseCase = listPendingApprovalsUseCase;
+    this.setEmergencyStopUseCase = setEmergencyStopUseCase;
   }
 
   create = async (req, res) => {
@@ -108,6 +110,18 @@ class TripController {
     const trip = await this.approveTripUseCase.execute(req.params.id, req.body, req.user);
     return ApiResponse.success(res, {
       message: req.body.approved ? 'Trip approved successfully' : 'Trip rejected',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  setEmergencyStop = async (req, res) => {
+    const trip = await this.setEmergencyStopUseCase.execute(
+      req.params.id,
+      { active: req.body.active, reason: req.body.reason },
+      req.user
+    );
+    return ApiResponse.success(res, {
+      message: req.body.active ? 'Emergency stop activated' : 'Emergency stop cleared',
       data: toTripResponseDto(trip),
     });
   };

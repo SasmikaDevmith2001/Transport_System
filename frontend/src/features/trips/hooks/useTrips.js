@@ -73,6 +73,17 @@ export function useApproveTrip() {
   });
 }
 
+export function useSetEmergencyStop() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => tripsApi.setEmergencyStop(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      queryClient.invalidateQueries({ queryKey: ['tracking'] });
+    },
+  });
+}
+
 export function useDeleteTrip() {
   const queryClient = useQueryClient();
   return useMutation({

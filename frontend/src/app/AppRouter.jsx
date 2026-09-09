@@ -10,6 +10,7 @@ import TripsListPage from '../features/trips/pages/TripsListPage';
 import BusinessTripsPage from '../features/trips/pages/BusinessTripsPage';
 import LocationsListPage from '../features/locations/pages/LocationsListPage';
 import LiveTrackingPage from '../features/tracking/pages/LiveTrackingPage';
+import DriverStatusPage from '../features/drivers/pages/DriverStatusPage';
 
 export default function AppRouter() {
   return (
@@ -31,6 +32,10 @@ export default function AppRouter() {
 
           <Route element={<ProtectedRoute permissions={['trips:update']} />}>
             <Route path="/live-tracking" element={<LiveTrackingPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute permissions={['drivers:read']} />}>
+            <Route path="/driver-status" element={<DriverStatusPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permissions={['customers:read']} />}>

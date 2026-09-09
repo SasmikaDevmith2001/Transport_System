@@ -188,6 +188,7 @@ export default function CustomersListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<BusinessIcon fontSize="medium" />}
         title="Customer Management"
         description="Manage client companies your transport operations serve."
         actions={

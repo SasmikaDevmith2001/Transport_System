@@ -113,6 +113,7 @@ export default function LocationsListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<LocationOnIcon fontSize="medium" />}
         title="Locations"
         description="Manage transport locations for customers. Click on the map to set coordinates."
         actions={

@@ -19,13 +19,13 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useDivisions } from '../hooks/useCustomers';
 
 const contactPersonSchema = Joi.object({
@@ -108,22 +108,12 @@ export default function CustomerFormDialog({ open, customer = null, submitting =
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main' }}>
-            {isEdit ? 'Edit Customer' : 'New Customer'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {isEdit ? 'Update customer information below' : 'Fill in the details to add a new customer'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider sx={{ mx: 0 }} />
+      <DialogHeader
+        icon={<BusinessIcon />}
+        title={isEdit ? 'Edit Customer' : 'New Customer'}
+        subtitle={isEdit ? 'Update customer information below' : 'Fill in the details to add a new customer'}
+        onClose={onClose}
+      />
 
       <DialogContent sx={{ px: 3, py: 3, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         {/* Section: Company Details */}

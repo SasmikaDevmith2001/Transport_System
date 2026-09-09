@@ -18,8 +18,8 @@ import {
   useMediaQuery,
   CircularProgress,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 
 const MapPicker = lazy(() => import('./MapPicker'));
 
@@ -82,21 +82,12 @@ export default function LocationFormDialog({ open, location = null, submitting =
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main' }}>
-            {isEdit ? 'Edit Location' : 'New Location'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {isEdit ? 'Update location details' : 'Click on the map or search to set the location'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider />
+      <DialogHeader
+        icon={<LocationOnIcon />}
+        title={isEdit ? 'Edit Location' : 'New Location'}
+        subtitle={isEdit ? 'Update location details' : 'Click on the map or search to set the location'}
+        onClose={onClose}
+      />
 
       <DialogContent sx={{ px: 3, py: 3, maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
         {/* Map */}

@@ -22,6 +22,9 @@ class Trip {
     approvedBy,
     approvedAt,
     rejectionReason,
+    emergencyStop,
+    emergencyStopAt,
+    emergencyStopReason,
     createdBy,
     updatedBy,
     createdAt,
@@ -53,6 +56,9 @@ class Trip {
     this.approvedBy = approvedBy;
     this.approvedAt = approvedAt;
     this.rejectionReason = rejectionReason;
+    this.emergencyStop = emergencyStop;
+    this.emergencyStopAt = emergencyStopAt;
+    this.emergencyStopReason = emergencyStopReason;
     this.createdBy = createdBy;
     this.updatedBy = updatedBy;
     this.createdAt = createdAt;

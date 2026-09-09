@@ -9,11 +9,10 @@ import {
   MenuItem,
   Grid,
   Typography,
-  IconButton,
-  Box,
   Divider,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useRoles } from '../hooks/useUsers';
 
 const DRIVER_ROLE_NAME = 'DRIVER';
@@ -103,21 +102,12 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 1 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700}>
-            {isEdit ? 'Edit User' : 'Create User'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {isEdit ? 'Update user account details' : 'Set up a new user account'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider sx={{ mx: 3, mt: 1 }} />
+      <DialogHeader
+        icon={<PersonIcon />}
+        title={isEdit ? 'Edit User' : 'Create User'}
+        subtitle={isEdit ? 'Update user account details' : 'Set up a new user account'}
+        onClose={onClose}
+      />
 
       <DialogContent sx={{ px: 3, py: 3 }}>
         {/* Section: Personal Info */}
