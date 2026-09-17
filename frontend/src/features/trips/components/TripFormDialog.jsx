@@ -26,9 +26,13 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RouteIcon from '@mui/icons-material/Route';
 import NotesIcon from '@mui/icons-material/Notes';
 import StraightenIcon from '@mui/icons-material/Straighten';
+import PersonIcon from '@mui/icons-material/Person';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import PhoneIcon from '@mui/icons-material/Phone';
 import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useCustomersList } from '../../customers/hooks/useCustomers';
 import { useActiveLocations } from '../../locations/hooks/useLocations';
+import { useActiveDrivers } from '../../drivers/hooks/useDrivers';
 import { getDrivingDistanceKm } from '../../../utils/gps';
 
 const stopSchema = Joi.object({
@@ -37,7 +41,9 @@ const stopSchema = Joi.object({
 });
 
 const tripSchema = Joi.object({
-  customerId: Joi.number().integer().positive().required().messages({ 'any.required': 'Customer is required' }),
+  // Derived automatically from the selected locations; not shown in the form.
+  customerId: Joi.number().integer().positive().allow(null, ''),
+  driverId: Joi.number().integer().positive().allow(null, ''),
   originLocationId: Joi.number().integer().positive().allow(null, ''),
   origin: Joi.string().trim().min(1).max(255).required(),
   scheduledDate: Joi.string().required().messages({ 'string.empty': 'Scheduled date is required' }),
@@ -49,6 +55,7 @@ const tripSchema = Joi.object({
 
 const DEFAULTS = {
   customerId: '',
+  driverId: '',
   originLocationId: '',
   origin: '',
   scheduledDate: '',
@@ -63,6 +70,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
   const { data: customersData } = useCustomersList({ page: 1, pageSize: 100, status: 'active' });
   const customers = customersData?.data || [];
   const { data: allLocations = [] } = useActiveLocations();
+  const { data: drivers = [] } = useActiveDrivers();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -77,11 +85,17 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
 
   const { fields, append, remove } = useFieldArray({ control, name: 'stops' });
 
-  const watchedCustomerId = watch('customerId');
-  // Only show locations for the selected customer (empty if no customer selected)
-  const locations = watchedCustomerId
-    ? allLocations.filter((l) => l.customerId === watchedCustomerId || !l.customerId)
-    : [];
+  // Locations can now be picked from ANY customer, not just the selected one.
+  const locations = allLocations;
+
+  const watchedDriverId = watch('driverId');
+  const watchedOrigin = watch('origin');
+  const watchedStops = watch('stops');
+  const selectedDriver = drivers.find((d) => d.id === watchedDriverId) || null;
+
+  // Auto-generated trip name: "Origin → Final Destination".
+  const finalDestination = (watchedStops || []).filter((s) => s?.locationName?.trim()).slice(-1)[0]?.locationName || '';
+  const autoTripName = watchedOrigin && finalDestination ? `${watchedOrigin} → ${finalDestination}` : '';
 
   const [distances, setDistances] = useState([]); 
   const [totalDistance, setTotalDistance] = useState(null);
@@ -146,6 +160,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
         trip
           ? {
               customerId: trip.customerId,
+              driverId: trip.driverId || '',
               originLocationId: '',
               origin: trip.origin,
               scheduledDate: trip.scheduledDate,
@@ -164,9 +179,20 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
 
   const handleFormSubmit = (values) => {
     const lastStop = values.stops[values.stops.length - 1];
+
+    // Ensure a customer is set: derive from a selected location, else fall
+    // back to the first active customer (backend requires customerId).
+    let customerId = values.customerId;
+    if (!customerId) {
+      const derived = [selectedOriginLoc, ...selectedStopLocs].find((l) => l?.customerId)?.customerId;
+      customerId = derived || customers[0]?.id || null;
+    }
+
     const payload = {
       ...values,
+      customerId,
       destination: lastStop.locationName,
+      driverId: values.driverId || null,
     };
     // Remove frontend-only fields
     delete payload.originLocationId;
@@ -177,11 +203,20 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
     onSubmit(payload);
   };
 
+  // Customer is no longer chosen manually — derive it from the first picked
+  // location that belongs to a customer (origin first, then stops).
+  const applyDerivedCustomer = (loc) => {
+    if (loc?.customerId && !watch('customerId')) {
+      setValue('customerId', loc.customerId, { shouldValidate: true });
+    }
+  };
+
   const handleOriginSelect = (loc) => {
     if (loc) {
       setValue('origin', loc.name, { shouldValidate: true });
       setValue('originLocationId', loc.id);
       setSelectedOriginLoc(loc);
+      applyDerivedCustomer(loc);
     }
   };
 
@@ -194,6 +229,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
         updated[index] = loc;
         return updated;
       });
+      applyDerivedCustomer(loc);
     }
   };
 
@@ -236,27 +272,57 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
         <Paper elevation={0} sx={{ p: 2.5, mb: 3, bgcolor: 'action.hover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <SectionHeader icon={LocalShippingIcon} title="Trip Information" />
           <Stack spacing={2}>
+            {/* Driver selection (step 1) */}
             <Controller
-              name="customerId"
+              name="driverId"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
                   select
-                  label="Customer"
+                  label="Driver"
                   fullWidth
                   size="small"
-                  error={!!errors.customerId}
-                  helperText={errors.customerId?.message}
+                  error={!!errors.driverId}
+                  helperText={errors.driverId?.message}
                 >
-                  {customers.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.companyName}
+                  <MenuItem value="">
+                    <em>Unassigned (assign later)</em>
+                  </MenuItem>
+                  {drivers.map((d) => (
+                    <MenuItem key={d.id} value={d.id}>
+                      {d.fullName} — {d.vehicleNumber || 'No vehicle'}
                     </MenuItem>
                   ))}
                 </TextField>
               )}
             />
+
+            {/* Driver details auto-populated from selection (step 2) */}
+            {selectedDriver && (
+              <Paper elevation={0} sx={{ p: 1.75, borderRadius: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+                <Stack spacing={0.75}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <PersonIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+                    <Typography variant="body2" fontWeight={700}>{selectedDriver.fullName}</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <DirectionsCarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Vehicle: {selectedDriver.vehicleNumber || '—'}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="caption" color="text.secondary">
+                      {selectedDriver.phone || '—'}
+                      {selectedDriver.licenseNumber ? ` • Licence: ${selectedDriver.licenseNumber}` : ''}
+                    </Typography>
+                  </Stack>
+                </Stack>
+              </Paper>
+            )}
+
             <Controller
               name="origin"
               control={control}
@@ -289,6 +355,19 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                 />
               )}
             />
+
+            {/* Auto-generated trip name from origin -> final destination */}
+            <TextField
+              label="Trip Name (auto)"
+              fullWidth
+              size="small"
+              value={autoTripName}
+              placeholder="Set origin and destination to generate"
+              InputProps={{ readOnly: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
+              helperText="Generated automatically from start → end point"
+            />
+
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Controller
                 name="scheduledDate"
@@ -356,7 +435,7 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                   Route Locations
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Select from saved locations. Last one is the final destination.
+                  Add locations from any customer. Last one is the final destination. Shortest path is auto-calculated.
                 </Typography>
               </Box>
             </Box>

@@ -211,13 +211,35 @@ export default function TripApprovalsPage() {
                     <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                       {/* Mileage comparison - card style */}
                       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
-                        <Paper elevation={0} sx={{ flex: 1, p: 1.5, borderRadius: 1.5, bgcolor: 'grey.50', textAlign: 'center' }}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            flex: 1,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            textAlign: 'center',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: (t) => (t.palette.mode === 'dark' ? 'rgba(148,163,184,0.10)' : 'grey.50'),
+                          }}
+                        >
                           <Typography variant="caption" color="text.secondary">Driver Mileage</Typography>
                           <Typography variant="h6" fontWeight={700} sx={{ mt: 0.5 }}>
                             {stop.driverMileage != null ? `${stop.driverMileage} km` : '—'}
                           </Typography>
                         </Paper>
-                        <Paper elevation={0} sx={{ flex: 1, p: 1.5, borderRadius: 1.5, bgcolor: 'success.50', textAlign: 'center' }}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            flex: 1,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            textAlign: 'center',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: (t) => (t.palette.mode === 'dark' ? 'rgba(34,197,94,0.14)' : 'success.50'),
+                          }}
+                        >
                           <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center">
                             <GpsFixedIcon sx={{ fontSize: 14 }} color="success" />
                             <Typography variant="caption" color="text.secondary">GPS Mileage</Typography>
@@ -226,7 +248,23 @@ export default function TripApprovalsPage() {
                             {stop.gpsMileage != null ? `${stop.gpsMileage} km` : '—'}
                           </Typography>
                         </Paper>
-                        <Paper elevation={0} sx={{ flex: 1, p: 1.5, borderRadius: 1.5, bgcolor: diffColor === 'error' ? 'error.50' : diffColor === 'warning' ? 'warning.50' : 'success.50', textAlign: 'center' }}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            flex: 1,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            textAlign: 'center',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: (t) => {
+                              const dark = t.palette.mode === 'dark';
+                              if (diffColor === 'error') return dark ? 'rgba(220,38,38,0.16)' : 'error.50';
+                              if (diffColor === 'warning') return dark ? 'rgba(245,158,11,0.16)' : 'warning.50';
+                              return dark ? 'rgba(34,197,94,0.14)' : 'success.50';
+                            },
+                          }}
+                        >
                           <Typography variant="caption" color="text.secondary">Difference</Typography>
                           <Typography variant="h6" fontWeight={700} color={`${diffColor}.main`} sx={{ mt: 0.5 }}>
                             {getMileageDiffLabel(stop.driverMileage, stop.gpsMileage)}
