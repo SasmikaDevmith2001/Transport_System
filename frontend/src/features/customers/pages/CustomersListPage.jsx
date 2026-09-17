@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Collapse, Chip } from '@mui/material';
+import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Collapse, Chip, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import BusinessIcon from '@mui/icons-material/Business';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import MapIcon from '@mui/icons-material/Map';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useSnackbar } from 'notistack';
@@ -131,6 +132,36 @@ export default function CustomersListPage() {
       },
     },
     { field: 'phone', headerName: 'Phone', sortable: false },
+    {
+      field: 'address',
+      headerName: 'Address',
+      sortable: false,
+      render: (row) => {
+        const parts = [row.addressLine1, row.addressLine2, row.city, row.country].filter(Boolean);
+        const fullAddress = parts.join(', ');
+        if (!fullAddress) return '—';
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+        return (
+          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ maxWidth: 260 }}>
+            <Typography variant="body2" noWrap title={fullAddress} sx={{ flex: 1, minWidth: 0 }}>
+              {fullAddress}
+            </Typography>
+            <Tooltip title="Open in Google Maps">
+              <IconButton
+                size="small"
+                component="a"
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MapIcon sx={{ fontSize: 16 }} color="primary" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      },
+    },
     { field: 'city', headerName: 'City', sortable: true, render: (row) => row.city || '-' },
     { field: 'status', headerName: 'Status', sortable: true, render: (row) => <StatusChip status={row.status} /> },
     {

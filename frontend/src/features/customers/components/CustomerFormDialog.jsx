@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { joiResolver } from '@hookform/resolvers/joi';
 import Joi from 'joi';
@@ -26,6 +26,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NotesIcon from '@mui/icons-material/Notes';
 import DialogHeader from '../../../components/feedback/DialogHeader';
+import { AddressSearchBox, AddressMap } from './AddressAutocomplete';
 import { useDivisions } from '../hooks/useCustomers';
 
 const contactPersonSchema = Joi.object({
@@ -39,6 +40,7 @@ const customerSchema = Joi.object({
   email: Joi.string().email({ tlds: false }).allow(''),
   phone: Joi.string().trim().min(7).max(20).required(),
   addressLine1: Joi.string().trim().allow('').max(255),
+  addressLine2: Joi.string().trim().allow('').max(255),
   city: Joi.string().trim().allow('').max(100),
   country: Joi.string().trim().max(100).default('Sri Lanka'),
   status: Joi.string().valid('active', 'inactive').required(),
@@ -52,6 +54,7 @@ const DEFAULTS = {
   email: '',
   phone: '',
   addressLine1: '',
+  addressLine2: '',
   city: '',
   country: 'Sri Lanka',
   status: 'active',
@@ -70,16 +73,31 @@ export default function CustomerFormDialog({ open, customer = null, submitting =
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm({ resolver: joiResolver(customerSchema, { abortEarly: false, stripUnknown: true }), defaultValues: DEFAULTS });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'contactPersons' });
 
+  // Marker position for the address map preview.
+  const [addressPos, setAddressPos] = useState(null);
+
   useEffect(() => {
     if (open) {
+      setAddressPos(null);
       reset(customer ? { ...DEFAULTS, ...customer, divisionId: customer.divisionId || '', contactPersons: customer.contactPersons || [] } : DEFAULTS);
     }
   }, [open, customer, reset]);
+
+  // When a Google Places suggestion is selected, auto-fill both address lines
+  // + city and move the map preview marker.
+  const handleAddressSelect = ({ addressLine1, addressLine2, city, country, latitude, longitude }) => {
+    setValue('addressLine1', addressLine1 || '', { shouldValidate: true });
+    setValue('addressLine2', addressLine2 || '', { shouldValidate: true });
+    if (city) setValue('city', city, { shouldValidate: true });
+    if (country) setValue('country', country, { shouldValidate: true });
+    if (latitude != null && longitude != null) setAddressPos({ lat: latitude, lng: longitude });
+  };
 
   const SectionHeader = ({ icon: Icon, title, subtitle }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
@@ -293,28 +311,43 @@ export default function CustomerFormDialog({ open, customer = null, submitting =
 
         {/* Section: Address */}
         <Paper elevation={0} sx={{ p: 2.5, mb: 3, bgcolor: 'action.hover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <SectionHeader icon={LocationOnIcon} title="Address" />
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Controller
-                name="addressLine1"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} label="Address" fullWidth size="small" placeholder="Street address" />
-                )}
-              />
+          <SectionHeader icon={LocationOnIcon} title="Address" subtitle="Search an address to auto-fill the fields" />
+
+          <Stack spacing={2}>
+            {/* Full-width search */}
+            <AddressSearchBox onSelect={handleAddressSelect} />
+
+            {/* Full-width map banner */}
+            <AddressMap position={addressPos} height={240} />
+
+            {/* Address fields */}
+            <Controller
+              name="addressLine1"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Address Line 1" fullWidth size="small" placeholder="Street address" />
+              )}
+            />
+            <Controller
+              name="addressLine2"
+              control={control}
+              render={({ field }) => (
+                <TextField {...field} label="Address Line 2" fullWidth size="small" placeholder="Apartment, area, etc. (optional)" />
+              )}
+            />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Controller name="city" control={control} render={({ field }) => <TextField {...field} label="City" fullWidth size="small" />} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="country"
+                  control={control}
+                  render={({ field }) => <TextField {...field} label="Country" fullWidth size="small" />}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller name="city" control={control} render={({ field }) => <TextField {...field} label="City" fullWidth size="small" />} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="country"
-                control={control}
-                render={({ field }) => <TextField {...field} label="Country" fullWidth size="small" />}
-              />
-            </Grid>
-          </Grid>
+          </Stack>
         </Paper>
 
         {/* Section: Notes */}

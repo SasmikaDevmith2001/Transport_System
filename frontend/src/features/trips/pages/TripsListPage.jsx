@@ -121,8 +121,8 @@ export default function TripsListPage() {
               <EditIcon fontSize="small" />
             </IconButton>
           )}
-          {hasPermission('trips:assign') && row.canBeAssigned !== false && ['pending', 'assigned'].includes(row.status) && (
-            <IconButton size="small" onClick={() => setAssignTarget(row)}>
+          {hasPermission('trips:assign') && !row.driver && row.canBeAssigned !== false && ['pending', 'assigned'].includes(row.status) && (
+            <IconButton size="small" onClick={() => setAssignTarget(row)} title="Assign driver">
               <PersonAddIcon fontSize="small" />
             </IconButton>
           )}
