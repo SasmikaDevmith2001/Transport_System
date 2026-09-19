@@ -10,6 +10,8 @@ class DriverController {
     listActiveDriversUseCase,
     updateDriverUseCase,
     deleteDriverUseCase,
+    userRepository,
+    driverRepository,
   }) {
     this.createDriverUseCase = createDriverUseCase;
     this.getDriverUseCase = getDriverUseCase;
@@ -17,6 +19,8 @@ class DriverController {
     this.listActiveDriversUseCase = listActiveDriversUseCase;
     this.updateDriverUseCase = updateDriverUseCase;
     this.deleteDriverUseCase = deleteDriverUseCase;
+    this.userRepository = userRepository;
+    this.driverRepository = driverRepository;
   }
 
   create = async (req, res) => {
@@ -53,6 +57,24 @@ class DriverController {
     return ApiResponse.success(res, {
       message: 'Active drivers retrieved successfully',
       data: drivers.map(toDriverResponseDto),
+    });
+  };
+
+  listLinkableUsers = async (req, res) => {
+    // Get all users with DRIVER role that are not already linked to a driver profile
+    const { rows } = await this.userRepository.list({ page: 1, pageSize: 200, offset: 0, sortBy: 'firstName', sortOrder: 'ASC', roleId: undefined });
+    // Filter to DRIVER role users
+    const driverRoleUsers = rows.filter((u) => u.roleName === 'DRIVER' && u.status === 'active');
+
+    // Get all driver profiles to find which user IDs are already linked
+    const { rows: allDrivers } = await this.driverRepository.list({ page: 1, pageSize: 1000, offset: 0, sortBy: 'firstName', sortOrder: 'ASC' });
+    const linkedUserIds = new Set(allDrivers.filter((d) => d.userId).map((d) => d.userId));
+
+    const linkable = driverRoleUsers.filter((u) => !linkedUserIds.has(u.id));
+
+    return ApiResponse.success(res, {
+      message: 'Linkable users retrieved successfully',
+      data: linkable.map((u) => ({ id: u.id, firstName: u.firstName, lastName: u.lastName, email: u.email })),
     });
   };
 

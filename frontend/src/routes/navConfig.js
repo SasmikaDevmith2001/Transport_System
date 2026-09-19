@@ -6,7 +6,9 @@
 export const navConfig = [
   { label: 'Dashboard', path: '/', icon: 'Dashboard' },
   { label: 'Trips', path: '/trips', icon: 'LocalShipping', permission: 'trips:read' },
+  { label: 'Trip Reports', path: '/business-trips', icon: 'WorkHistory', permission: 'trips:read' },
+  { label: 'Live Tracking', path: '/live-tracking', icon: 'GpsFixed', permission: 'trips:update' },
+  { label: 'Driver Status', path: '/driver-status', icon: 'Badge', permission: 'drivers:read' },
   { label: 'Customers', path: '/customers', icon: 'Business', permission: 'customers:read' },
-  { label: 'Drivers', path: '/drivers', icon: 'Badge', permission: 'drivers:read' },
   { label: 'Users', path: '/users', icon: 'People', permission: 'users:read' },
 ];

@@ -5,6 +5,7 @@ const TripStop = require('../../../domain/entities/TripStop');
 const {
   Trip: TripModel,
   TripStop: TripStopModel,
+  TripStopInvoice: TripStopInvoiceModel,
   Customer: CustomerModel,
   Driver: DriverModel,
   sequelize,
@@ -16,6 +17,7 @@ function stopToDomain(instance) {
   return new TripStop({
     id: plain.id,
     tripId: plain.tripId,
+    locationId: plain.locationId,
     sequenceNo: plain.sequenceNo,
     locationName: plain.locationName,
     address: plain.address,
@@ -23,10 +25,19 @@ function stopToDomain(instance) {
     contactPhone: plain.contactPhone,
     status: plain.status,
     notes: plain.notes,
+    mileage: plain.mileage ? parseFloat(plain.mileage) : null,
+    invoiceNumber: plain.invoiceNumber,
+    latitude: plain.latitude ? parseFloat(plain.latitude) : null,
+    longitude: plain.longitude ? parseFloat(plain.longitude) : null,
+    gpsLocationName: plain.gpsLocationName,
+    gpsMileage: plain.gpsMileage ? parseFloat(plain.gpsMileage) : null,
+    driverMileage: plain.driverMileage ? parseFloat(plain.driverMileage) : null,
+    expectedMileage: plain.expectedMileage ? parseFloat(plain.expectedMileage) : null,
     arrivedAt: plain.arrivedAt,
     deliveredAt: plain.deliveredAt,
     createdAt: plain.createdAt,
     updatedAt: plain.updatedAt,
+    invoices: (plain.Invoices || []).map((inv) => inv.invoiceNumber),
   });
 }
 
@@ -45,9 +56,20 @@ function toDomain(instance) {
     status: plain.status,
     cargoDescription: plain.cargoDescription,
     remarks: plain.remarks,
+    mileage: plain.mileage ? parseFloat(plain.mileage) : null,
+    invoiceNumber: plain.invoiceNumber,
+    startLatitude: plain.startLatitude ? parseFloat(plain.startLatitude) : null,
+    startLongitude: plain.startLongitude ? parseFloat(plain.startLongitude) : null,
     assignedAt: plain.assignedAt,
     startedAt: plain.startedAt,
     completedAt: plain.completedAt,
+    approvalStatus: plain.approvalStatus,
+    approvedBy: plain.approvedBy,
+    approvedAt: plain.approvedAt,
+    rejectionReason: plain.rejectionReason,
+    emergencyStop: plain.emergencyStop,
+    emergencyStopAt: plain.emergencyStopAt,
+    emergencyStopReason: plain.emergencyStopReason,
     createdBy: plain.createdBy,
     updatedBy: plain.updatedBy,
     createdAt: plain.createdAt,
@@ -55,7 +77,7 @@ function toDomain(instance) {
     deletedAt: plain.deletedAt,
     customer: plain.Customer ? { id: plain.Customer.id, companyName: plain.Customer.companyName } : null,
     driver: plain.Driver
-      ? { id: plain.Driver.id, firstName: plain.Driver.firstName, lastName: plain.Driver.lastName, phone: plain.Driver.phone }
+      ? { id: plain.Driver.id, firstName: plain.Driver.firstName, lastName: plain.Driver.lastName, phone: plain.Driver.phone, vehicleNumber: plain.Driver.vehicleNumber }
       : null,
     stops: (plain.TripStops || []).map(stopToDomain).sort((a, b) => a.sequenceNo - b.sequenceNo),
   });
@@ -63,8 +85,8 @@ function toDomain(instance) {
 
 const INCLUDE_RELATIONS = [
   { model: CustomerModel, attributes: ['id', 'companyName'] },
-  { model: DriverModel, attributes: ['id', 'firstName', 'lastName', 'phone'] },
-  { model: TripStopModel, as: 'TripStops' },
+  { model: DriverModel, attributes: ['id', 'firstName', 'lastName', 'phone', 'vehicleNumber'] },
+  { model: TripStopModel, as: 'TripStops', include: [{ model: TripStopInvoiceModel, as: 'Invoices' }] },
 ];
 
 class TripRepository extends ITripRepository {
@@ -109,10 +131,46 @@ class TripRepository extends ITripRepository {
     }).then(() => this.findById(tripId));
   }
 
-  async list({ page, pageSize, offset, sortBy, sortOrder, search, status, driverId, customerId, dateFrom, dateTo }) {
+  async updateStop(stopId, data) {
+    await TripStopModel.update(data, { where: { id: stopId } });
+    const instance = await TripStopModel.findByPk(stopId, { include: [{ model: TripStopInvoiceModel, as: 'Invoices' }] });
+    return instance ? stopToDomain(instance) : null;
+  }
+
+  async findStopById(stopId) {
+    const instance = await TripStopModel.findByPk(stopId, { include: [{ model: TripStopInvoiceModel, as: 'Invoices' }] });
+    return instance ? stopToDomain(instance) : null;
+  }
+
+  async replaceStopInvoices(stopId, invoiceNumbers = []) {
+    await TripStopInvoiceModel.destroy({ where: { tripStopId: stopId } });
+    if (invoiceNumbers.length > 0) {
+      await TripStopInvoiceModel.bulkCreate(
+        invoiceNumbers.map((num) => ({ tripStopId: stopId, invoiceNumber: num }))
+      );
+    }
+  }
+
+  async listPendingApproval({ page, pageSize, offset, sortBy, sortOrder }) {
+    const where = { status: 'completed', approvalStatus: 'pending' };
+
+    const { rows, count } = await TripModel.findAndCountAll({
+      where,
+      include: INCLUDE_RELATIONS,
+      limit: pageSize,
+      offset,
+      order: [[sortBy || 'completedAt', sortOrder || 'DESC']],
+      distinct: true,
+    });
+
+    return { rows: rows.map(toDomain), total: count, page, pageSize };
+  }
+
+  async list({ page, pageSize, offset, sortBy, sortOrder, search, status, approvalStatus, driverId, customerId, dateFrom, dateTo }) {
     const where = {};
 
     if (status) where.status = status;
+    if (approvalStatus) where.approvalStatus = approvalStatus;
     if (driverId) where.driverId = driverId;
     if (customerId) where.customerId = customerId;
 
@@ -161,9 +219,15 @@ class TripRepository extends ITripRepository {
   async generateNextTripNumber() {
     const year = new Date().getFullYear();
     const prefix = `TRP-${year}-`;
+    // IMPORTANT: include soft-deleted rows (paranoid: false) and order by the
+    // trip_number itself. The table is paranoid, so ordering by id while
+    // excluding soft-deleted trips can return an older row and produce a
+    // sequence number that is already taken by a (soft-)deleted trip, which
+    // then violates the unique constraint on trip_number.
     const last = await TripModel.findOne({
       where: { tripNumber: { [Op.like]: `${prefix}%` } },
-      order: [['id', 'DESC']],
+      order: [['tripNumber', 'DESC']],
+      paranoid: false,
     });
 
     let nextSeq = 1;

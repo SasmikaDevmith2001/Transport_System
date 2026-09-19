@@ -1,45 +1,22 @@
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { joiResolver } from '@hookform/resolvers/joi';
-import Joi from 'joi';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
   TextField,
-  Stack,
   MenuItem,
+  Grid,
+  Typography,
+  Divider,
 } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useRoles } from '../hooks/useUsers';
 
-const baseSchema = {
-  firstName: Joi.string().trim().min(1).max(100).required(),
-  lastName: Joi.string().trim().min(1).max(100).required(),
-  email: Joi.string().email({ tlds: false }).required(),
-  phone: Joi.string().trim().allow('').max(20),
-  roleId: Joi.number().integer().positive().required(),
-  status: Joi.string().valid('active', 'inactive', 'suspended').required(),
-};
+const DRIVER_ROLE_NAME = 'DRIVER';
 
-const createSchema = Joi.object({
-  ...baseSchema,
-  password: Joi.string()
-    .min(8)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/)
-    .required()
-    .messages({ 'string.pattern.base': 'Must include uppercase, lowercase, and a number' }),
-});
-
-const updateSchema = Joi.object(baseSchema);
-
-/**
- * Shared create/edit dialog for the Users module. Switches validation
- * schema and default values based on whether `user` (edit) is provided.
- * Role options are fetched from the backend rather than hardcoded, so the
- * frontend never has to know role IDs in advance.
- */
 export default function UserFormDialog({ open, user = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!user;
   const { data: roles = [] } = useRoles();
@@ -48,9 +25,9 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm({
-    resolver: joiResolver(isEdit ? updateSchema : createSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -59,118 +36,181 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
       roleId: '',
       status: 'active',
       password: '',
+      nicNumber: '',
+      licenseNumber: '',
+      licenseExpiry: '',
+      vehicleNumber: '',
+      address: '',
+      driverNotes: '',
     },
   });
 
+  const selectedRoleId = watch('roleId');
+  const selectedRole = roles.find((r) => r.id === selectedRoleId);
+  const isDriverRole = selectedRole?.name === DRIVER_ROLE_NAME;
+
   useEffect(() => {
     if (open) {
-      reset(
-        user
-          ? {
-              firstName: user.firstName,
-              lastName: user.lastName,
-              email: user.email,
-              phone: user.phone || '',
-              roleId: user.roleId,
-              status: user.status,
-            }
-          : { firstName: '', lastName: '', email: '', phone: '', roleId: '', status: 'active', password: '' }
-      );
+      if (user) {
+        reset({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone || '',
+          roleId: user.roleId,
+          status: user.status,
+          password: '',
+          nicNumber: user.driver?.nicNumber || '',
+          licenseNumber: user.driver?.licenseNumber || '',
+          licenseExpiry: user.driver?.licenseExpiry?.slice(0, 10) || '',
+          vehicleNumber: user.driver?.vehicleNumber || '',
+          address: user.driver?.address || '',
+          driverNotes: user.driver?.notes || '',
+        });
+      } else {
+        reset({
+          firstName: '', lastName: '', email: '', phone: '', roleId: '', status: 'active', password: '',
+          nicNumber: '', licenseNumber: '', licenseExpiry: '', vehicleNumber: '', address: '', driverNotes: '',
+        });
+      }
     }
   }, [open, user, reset]);
 
   const submit = (values) => {
-    if (isEdit) {
-      // eslint-disable-next-line no-unused-vars
-      const { password, ...rest } = values;
-      onSubmit(rest);
-    } else {
-      onSubmit(values);
+    const payload = {
+      firstName: values.firstName,
+      lastName: values.lastName,
+      phone: values.phone || null,
+      roleId: values.roleId,
+      status: values.status,
+    };
+    if (!isEdit) {
+      payload.email = values.email;
+      payload.password = values.password;
     }
+    // Include driver fields if role is DRIVER
+    if (isDriverRole) {
+      payload.nicNumber = values.nicNumber;
+      payload.licenseNumber = values.licenseNumber;
+      payload.licenseExpiry = values.licenseExpiry;
+      payload.vehicleNumber = values.vehicleNumber || null;
+      payload.address = values.address || null;
+      payload.driverNotes = values.driverNotes || null;
+    }
+    onSubmit(payload);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isEdit ? 'Edit User' : 'Create User'}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Stack direction="row" spacing={2}>
-            <Controller
-              name="firstName"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} label="First Name" fullWidth error={!!errors.firstName} helperText={errors.firstName?.message} />
-              )}
-            />
-            <Controller
-              name="lastName"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} label="Last Name" fullWidth error={!!errors.lastName} helperText={errors.lastName?.message} />
-              )}
-            />
-          </Stack>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogHeader
+        icon={<PersonIcon />}
+        title={isEdit ? 'Edit User' : 'Create User'}
+        subtitle={isEdit ? 'Update user account details' : 'Set up a new user account'}
+        onClose={onClose}
+      />
 
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} label="Email" fullWidth disabled={isEdit} error={!!errors.email} helperText={errors.email?.message} />
-            )}
-          />
+      <DialogContent sx={{ px: 3, py: 3 }}>
+        {/* Section: Personal Info */}
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          Personal Information
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller name="firstName" control={control} rules={{ required: 'Required' }}
+              render={({ field }) => <TextField {...field} label="First Name" fullWidth error={!!errors.firstName} helperText={errors.firstName?.message} />} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller name="lastName" control={control} rules={{ required: 'Required' }}
+              render={({ field }) => <TextField {...field} label="Last Name" fullWidth error={!!errors.lastName} helperText={errors.lastName?.message} />} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller name="phone" control={control}
+              render={({ field }) => <TextField {...field} label="Phone" fullWidth />} />
+          </Grid>
+        </Grid>
 
-          <Controller
-            name="phone"
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} label="Phone" fullWidth error={!!errors.phone} helperText={errors.phone?.message} />
-            )}
-          />
-
-          <Stack direction="row" spacing={2}>
-            <Controller
-              name="roleId"
-              control={control}
+        {/* Section: Account */}
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+          Account Settings
+        </Typography>
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller name="email" control={control} rules={{ required: 'Required' }}
+              render={({ field }) => <TextField {...field} label="Email" fullWidth disabled={isEdit} error={!!errors.email} helperText={errors.email?.message} />} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller name="roleId" control={control} rules={{ required: 'Required' }}
               render={({ field }) => (
                 <TextField {...field} select label="Role" fullWidth error={!!errors.roleId} helperText={errors.roleId?.message}>
                   {roles.map((r) => (
-                    <MenuItem key={r.id} value={r.id}>
-                      {r.name.replace('_', ' ')}
-                    </MenuItem>
+                    <MenuItem key={r.id} value={r.id}>{r.name.replace(/_/g, ' ')}</MenuItem>
                   ))}
                 </TextField>
-              )}
-            />
-            <Controller
-              name="status"
-              control={control}
+              )} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller name="status" control={control}
               render={({ field }) => (
-                <TextField {...field} select label="Status" fullWidth error={!!errors.status} helperText={errors.status?.message}>
+                <TextField {...field} select label="Status" fullWidth>
                   <MenuItem value="active">Active</MenuItem>
                   <MenuItem value="inactive">Inactive</MenuItem>
                   <MenuItem value="suspended">Suspended</MenuItem>
                 </TextField>
-              )}
-            />
-          </Stack>
-
+              )} />
+          </Grid>
           {!isEdit && (
-            <Controller
-              name="password"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} type="password" label="Password" fullWidth error={!!errors.password} helperText={errors.password?.message} />
-              )}
-            />
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Controller name="password" control={control} rules={{ required: 'Required', minLength: { value: 8, message: 'Min 8 characters' } }}
+                render={({ field }) => <TextField {...field} type="password" label="Password" fullWidth error={!!errors.password} helperText={errors.password?.message} />} />
+            </Grid>
           )}
-        </Stack>
+        </Grid>
+
+        {/* Section: Driver Details (conditional) */}
+        {isDriverRole && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
+              Driver Details
+            </Typography>
+            <Grid container spacing={2.5}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="nicNumber" control={control} rules={{ required: isDriverRole ? 'Required for drivers' : false }}
+                  render={({ field }) => <TextField {...field} label="NIC Number" fullWidth error={!!errors.nicNumber} helperText={errors.nicNumber?.message} />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="licenseNumber" control={control} rules={{ required: isDriverRole ? 'Required for drivers' : false }}
+                  render={({ field }) => <TextField {...field} label="License Number" fullWidth error={!!errors.licenseNumber} helperText={errors.licenseNumber?.message} />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="licenseExpiry" control={control} rules={{ required: isDriverRole ? 'Required for drivers' : false }}
+                  render={({ field }) => <TextField {...field} type="date" label="License Expiry" fullWidth InputLabelProps={{ shrink: true }} error={!!errors.licenseExpiry} helperText={errors.licenseExpiry?.message} />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="vehicleNumber" control={control}
+                  render={({ field }) => <TextField {...field} label="Vehicle Number" fullWidth />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="address" control={control}
+                  render={({ field }) => <TextField {...field} label="Address" fullWidth />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="driverNotes" control={control}
+                  render={({ field }) => <TextField {...field} label="Notes" fullWidth multiline minRows={2} />} />
+              </Grid>
+            </Grid>
+          </>
+        )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
+
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={submitting} variant="outlined" color="inherit">
           Cancel
         </Button>
         <Button onClick={handleSubmit(submit)} variant="contained" disabled={submitting}>
-          {submitting ? 'Saving...' : 'Save'}
+          {submitting ? 'Saving...' : isEdit ? 'Update User' : 'Create User'}
         </Button>
       </DialogActions>
     </Dialog>

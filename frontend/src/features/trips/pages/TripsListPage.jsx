@@ -6,6 +6,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAddAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -13,13 +15,16 @@ import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
 import TripFormDialog from '../components/TripFormDialog';
 import AssignDriverDialog from '../components/AssignDriverDialog';
 import TripDetailDrawer from '../components/TripDetailDrawer';
+import TripInvoiceDialog from '../components/TripInvoiceDialog';
 import {
   useTripsList,
   useCreateTrip,
   useUpdateTrip,
   useAssignTrip,
   useUpdateTripStatus,
+  useUpdateTripDriverDetails,
   useDeleteTrip,
+  useSetEmergencyStop,
 } from '../hooks/useTrips';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -50,6 +55,7 @@ export default function TripsListPage() {
   const [assignTarget, setAssignTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewingTrip, setViewingTrip] = useState(null);
+  const [invoiceTrip, setInvoiceTrip] = useState(null);
 
   const params = { page, pageSize, search: search || undefined, status: status || undefined, sortBy, sortOrder };
   const { data, isLoading } = useTripsList(params);
@@ -58,7 +64,9 @@ export default function TripsListPage() {
   const updateTrip = useUpdateTrip();
   const assignTrip = useAssignTrip();
   const updateStatus = useUpdateTripStatus();
+  const updateDriverDetails = useUpdateTripDriverDetails();
   const deleteTrip = useDeleteTrip();
+  const setEmergencyStop = useSetEmergencyStop();
 
   const columns = [
     {
@@ -103,13 +111,18 @@ export default function TripsListPage() {
           <IconButton size="small" onClick={() => setViewingTrip(row)}>
             <VisibilityIcon fontSize="small" />
           </IconButton>
+          {row.status === 'completed' && (
+            <IconButton size="small" onClick={() => setInvoiceTrip(row)} title="View Invoice">
+              <ReceiptIcon fontSize="small" color="primary" />
+            </IconButton>
+          )}
           {hasPermission('trips:update') && !isDriver && (
             <IconButton size="small" onClick={() => { setEditing(row); setFormOpen(true); }}>
               <EditIcon fontSize="small" />
             </IconButton>
           )}
-          {hasPermission('trips:assign') && row.canBeAssigned !== false && ['pending', 'assigned'].includes(row.status) && (
-            <IconButton size="small" onClick={() => setAssignTarget(row)}>
+          {hasPermission('trips:assign') && !row.driver && row.canBeAssigned !== false && ['pending', 'assigned'].includes(row.status) && (
+            <IconButton size="small" onClick={() => setAssignTarget(row)} title="Assign driver">
               <PersonAddIcon fontSize="small" />
             </IconButton>
           )}
@@ -157,13 +170,33 @@ export default function TripsListPage() {
     }
   };
 
-  const handleAdvanceStatus = async (nextStatus) => {
+  const handleAdvanceStatus = async (nextStatus, gps) => {
     try {
-      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus });
+      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus, gps: gps || {} });
       enqueueSnackbar('Trip status updated', { variant: 'success' });
       setViewingTrip(updated);
     } catch (err) {
       enqueueSnackbar(err.response?.data?.message || 'Failed to update trip status', { variant: 'error' });
+    }
+  };
+
+  const handleSetEmergencyStop = async (active) => {
+    try {
+      const updated = await setEmergencyStop.mutateAsync({ id: viewingTrip.id, payload: { active } });
+      enqueueSnackbar(active ? 'Emergency stop activated' : 'Emergency stop cleared', { variant: active ? 'warning' : 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to update emergency stop', { variant: 'error' });
+    }
+  };
+
+  const handleUpdateDriverDetails = async (stopId, payload) => {
+    try {
+      const updated = await updateDriverDetails.mutateAsync({ tripId: viewingTrip.id, stopId, payload });
+      enqueueSnackbar('Stop details saved', { variant: 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to save stop details', { variant: 'error' });
     }
   };
 
@@ -180,6 +213,7 @@ export default function TripsListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<LocalShippingIcon fontSize="medium" />}
         title={isDriver ? 'My Trips' : 'Trip Management'}
         description={
           isDriver
@@ -201,7 +235,7 @@ export default function TripsListPage() {
           size="small"
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 420 } }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField
@@ -259,8 +293,14 @@ export default function TripsListPage() {
         trip={viewingTrip}
         onClose={() => setViewingTrip(null)}
         onAdvanceStatus={handleAdvanceStatus}
+        onUpdateStopDetails={handleUpdateDriverDetails}
+        onSetEmergencyStop={handleSetEmergencyStop}
         canAdvance={hasPermission('trips:update') || isDriver}
+        canEditStops={isDriver || hasPermission('trips:update')}
+        isDriver={isDriver}
         advancing={updateStatus.isPending}
+        savingStop={updateDriverDetails.isPending}
+        settingEmergency={setEmergencyStop.isPending}
       />
 
       <ConfirmDialog
@@ -270,6 +310,12 @@ export default function TripsListPage() {
         loading={deleteTrip.isPending}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
+      />
+
+      <TripInvoiceDialog
+        open={!!invoiceTrip}
+        trip={invoiceTrip}
+        onClose={() => setInvoiceTrip(null)}
       />
     </Box>
   );

@@ -20,7 +20,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "mysql2": "^3.23.2",
     "sequelize": "^6.37.8"

@@ -5,6 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import BadgeIcon from '@mui/icons-material/Badge';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -146,6 +147,7 @@ export default function DriversListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<BadgeIcon fontSize="medium" />}
         title="Driver Management"
         description="Manage driver profiles, licenses, and availability."
         actions={
@@ -163,7 +165,7 @@ export default function DriversListPage() {
           size="small"
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 390 } }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField

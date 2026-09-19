@@ -20,6 +20,7 @@ class User {
     createdAt,
     updatedAt,
     deletedAt,
+    driver,
   }) {
     this.id = id;
     this.roleId = roleId;
@@ -36,6 +37,7 @@ class User {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.deletedAt = deletedAt;
+    this.driver = driver || null;
   }
 
   get fullName() {

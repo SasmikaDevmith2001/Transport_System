@@ -1,16 +1,18 @@
-const bcrypt = require('bcryptjs');
 const IHasher = require('../../application/interfaces/IHasher');
 
-const SALT_ROUNDS = 10;
-
-class BcryptHasher extends IHasher {
+/**
+ * Plain-text hasher for development/testing only.
+ * Stores passwords as-is without hashing.
+ * DO NOT use in production!
+ */
+class PlainTextHasher extends IHasher {
   async hash(plainText) {
-    return bcrypt.hash(plainText, SALT_ROUNDS);
+    return plainText;
   }
 
   async compare(plainText, hash) {
-    return bcrypt.compare(plainText, hash);
+    return plainText === hash;
   }
 }
 
-module.exports = new BcryptHasher();
+module.exports = new PlainTextHasher();

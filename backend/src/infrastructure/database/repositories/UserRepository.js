@@ -1,11 +1,12 @@
 const { Op } = require('sequelize');
 const IUserRepository = require('../../../domain/repositories/IUserRepository');
 const User = require('../../../domain/entities/User');
-const { User: UserModel, Role: RoleModel } = require('../sequelize/models');
+const { User: UserModel, Role: RoleModel, Driver: DriverModel } = require('../sequelize/models');
 
 function toDomain(instance) {
   if (!instance) return null;
   const plain = instance.get({ plain: true });
+  const driver = plain.Driver || null;
   return new User({
     id: plain.id,
     roleId: plain.roleId,
@@ -22,6 +23,16 @@ function toDomain(instance) {
     createdAt: plain.createdAt,
     updatedAt: plain.updatedAt,
     deletedAt: plain.deletedAt,
+    // Driver fields (only populated when user has a linked driver record)
+    driver: driver ? {
+      id: driver.id,
+      nicNumber: driver.nicNumber,
+      licenseNumber: driver.licenseNumber,
+      licenseExpiry: driver.licenseExpiry,
+      vehicleNumber: driver.vehicleNumber,
+      address: driver.address,
+      notes: driver.notes,
+    } : null,
   });
 }
 
@@ -32,12 +43,12 @@ function toDomain(instance) {
  */
 class UserRepository extends IUserRepository {
   async findById(id) {
-    const instance = await UserModel.findByPk(id, { include: [RoleModel] });
+    const instance = await UserModel.findByPk(id, { include: [RoleModel, DriverModel] });
     return toDomain(instance);
   }
 
   async findByEmail(email) {
-    const instance = await UserModel.findOne({ where: { email }, include: [RoleModel] });
+    const instance = await UserModel.findOne({ where: { email }, include: [RoleModel, DriverModel] });
     return toDomain(instance);
   }
 
@@ -81,7 +92,7 @@ class UserRepository extends IUserRepository {
 
     const { rows, count } = await UserModel.findAndCountAll({
       where,
-      include: [RoleModel],
+      include: [RoleModel, DriverModel],
       limit: pageSize,
       offset,
       order: [[sortBy, sortOrder]],

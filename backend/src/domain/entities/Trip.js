@@ -11,9 +11,20 @@ class Trip {
     status,
     cargoDescription,
     remarks,
+    mileage,
+    invoiceNumber,
+    startLatitude,
+    startLongitude,
     assignedAt,
     startedAt,
     completedAt,
+    approvalStatus,
+    approvedBy,
+    approvedAt,
+    rejectionReason,
+    emergencyStop,
+    emergencyStopAt,
+    emergencyStopReason,
     createdBy,
     updatedBy,
     createdAt,
@@ -34,16 +45,27 @@ class Trip {
     this.status = status;
     this.cargoDescription = cargoDescription;
     this.remarks = remarks;
+    this.mileage = mileage;
+    this.invoiceNumber = invoiceNumber;
+    this.startLatitude = startLatitude;
+    this.startLongitude = startLongitude;
     this.assignedAt = assignedAt;
     this.startedAt = startedAt;
     this.completedAt = completedAt;
+    this.approvalStatus = approvalStatus;
+    this.approvedBy = approvedBy;
+    this.approvedAt = approvedAt;
+    this.rejectionReason = rejectionReason;
+    this.emergencyStop = emergencyStop;
+    this.emergencyStopAt = emergencyStopAt;
+    this.emergencyStopReason = emergencyStopReason;
     this.createdBy = createdBy;
     this.updatedBy = updatedBy;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.deletedAt = deletedAt;
-    this.customer = customer; // { id, companyName } - denormalized for display
-    this.driver = driver; // { id, firstName, lastName } - denormalized for display
+    this.customer = customer;
+    this.driver = driver;
     this.stops = stops;
   }
 

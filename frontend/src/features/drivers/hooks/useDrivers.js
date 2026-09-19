@@ -17,6 +17,14 @@ export function useActiveDrivers() {
   });
 }
 
+export function useLinkableDriverUsers() {
+  return useQuery({
+    queryKey: ['drivers', 'linkable-users'],
+    queryFn: driversApi.listDriverUsers,
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateDriver() {
   const queryClient = useQueryClient();
   return useMutation({

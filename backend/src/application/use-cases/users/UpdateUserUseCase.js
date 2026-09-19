@@ -2,10 +2,11 @@ const { NotFoundError, ForbiddenError } = require('../../../domain/errors');
 const RoleName = require('../../../domain/enums/RoleName');
 
 class UpdateUserUseCase {
-  constructor(userRepository, roleRepository, logger) {
+  constructor(userRepository, roleRepository, logger, driverRepository) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.logger = logger;
+    this.driverRepository = driverRepository;
   }
 
   async execute(id, updates, updatedBy, actorRole) {
@@ -25,7 +26,50 @@ class UpdateUserUseCase {
       }
     }
 
-    const user = await this.userRepository.update(id, { ...updates, updatedBy });
+    // Separate driver fields from user fields
+    const { nicNumber, licenseNumber, licenseExpiry, vehicleNumber, address, driverNotes, ...userUpdates } = updates;
+    const driverFields = { nicNumber, licenseNumber, licenseExpiry, vehicleNumber, address, notes: driverNotes };
+
+    const user = await this.userRepository.update(id, { ...userUpdates, updatedBy });
+
+    // Update driver record if this user is a DRIVER
+    if (this.driverRepository) {
+      const effectiveRoleId = updates.roleId || existing.roleId;
+      const role = await this.roleRepository.findById(effectiveRoleId);
+
+      if (role?.name === RoleName.DRIVER) {
+        const existingDriver = await this.driverRepository.findByUserId(id);
+        const driverData = {
+          firstName: updates.firstName || existing.firstName,
+          lastName: updates.lastName || existing.lastName,
+          phone: updates.phone || existing.phone,
+          email: existing.email,
+          ...(nicNumber !== undefined && { nicNumber }),
+          ...(licenseNumber !== undefined && { licenseNumber }),
+          ...(licenseExpiry !== undefined && { licenseExpiry }),
+          ...(vehicleNumber !== undefined && { vehicleNumber }),
+          ...(address !== undefined && { address }),
+          ...(driverNotes !== undefined && { notes: driverNotes }),
+          status: updates.status || existing.status,
+          updatedBy,
+        };
+
+        if (existingDriver) {
+          await this.driverRepository.update(existingDriver.id, driverData);
+        } else {
+          // Create a driver record if it doesn't exist yet
+          await this.driverRepository.create({
+            userId: id,
+            nicNumber: nicNumber || '',
+            licenseNumber: licenseNumber || '',
+            licenseExpiry: licenseExpiry || new Date().toISOString().slice(0, 10),
+            ...driverData,
+            createdBy: updatedBy,
+          });
+        }
+      }
+    }
+
     this.logger.info('User updated', { userId: id, updatedBy });
     return user;
   }

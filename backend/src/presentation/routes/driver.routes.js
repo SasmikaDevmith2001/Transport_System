@@ -23,6 +23,13 @@ module.exports = (driverController) => {
     asyncHandler(driverController.listActive)
   );
 
+  // List user accounts with DRIVER role that are not yet linked to a driver profile
+  router.get(
+    '/linkable-users',
+    authorizePermissions('drivers:create', 'drivers:update'),
+    asyncHandler(driverController.listLinkableUsers)
+  );
+
   router.get(
     '/',
     authorizePermissions('drivers:read'),
