@@ -67,7 +67,6 @@ export default function TripApprovalsPage() {
       render: (row) => (
         <Box>
           <Typography variant="body2">{row.origin} → {row.destination}</Typography>
-          <Typography variant="caption" color="text.secondary">{row.customer?.companyName}</Typography>
         </Box>
       ),
     },

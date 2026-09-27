@@ -25,6 +25,7 @@ import {
   useUpdateTripDriverDetails,
   useDeleteTrip,
   useSetEmergencyStop,
+  useReorderStops,
 } from '../hooks/useTrips';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -67,6 +68,7 @@ export default function TripsListPage() {
   const updateDriverDetails = useUpdateTripDriverDetails();
   const deleteTrip = useDeleteTrip();
   const setEmergencyStop = useSetEmergencyStop();
+  const reorderStops = useReorderStops();
 
   const columns = [
     {
@@ -85,9 +87,6 @@ export default function TripsListPage() {
       render: (row) => (
         <Box>
           <Typography variant="body2">{row.origin} → {row.destination}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {row.customer?.companyName}
-          </Typography>
         </Box>
       ),
     },
@@ -170,9 +169,9 @@ export default function TripsListPage() {
     }
   };
 
-  const handleAdvanceStatus = async (nextStatus, gps) => {
+  const handleAdvanceStatus = async (nextStatus, gps, extra) => {
     try {
-      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus, gps: gps || {} });
+      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus, gps: gps || {}, extra: extra || {} });
       enqueueSnackbar('Trip status updated', { variant: 'success' });
       setViewingTrip(updated);
     } catch (err) {
@@ -187,6 +186,16 @@ export default function TripsListPage() {
       setViewingTrip(updated);
     } catch (err) {
       enqueueSnackbar(err.response?.data?.message || 'Failed to update emergency stop', { variant: 'error' });
+    }
+  };
+
+  const handleReorderStops = async (orderedStops) => {
+    try {
+      const updated = await reorderStops.mutateAsync({ id: viewingTrip.id, stops: orderedStops });
+      enqueueSnackbar('Stops reordered by nearest distance', { variant: 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to reorder stops', { variant: 'error' });
     }
   };
 
@@ -295,12 +304,14 @@ export default function TripsListPage() {
         onAdvanceStatus={handleAdvanceStatus}
         onUpdateStopDetails={handleUpdateDriverDetails}
         onSetEmergencyStop={handleSetEmergencyStop}
+        onReorderStops={handleReorderStops}
         canAdvance={hasPermission('trips:update') || isDriver}
         canEditStops={isDriver || hasPermission('trips:update')}
         isDriver={isDriver}
         advancing={updateStatus.isPending}
         savingStop={updateDriverDetails.isPending}
         settingEmergency={setEmergencyStop.isPending}
+        reordering={reorderStops.isPending}
       />
 
       <ConfirmDialog

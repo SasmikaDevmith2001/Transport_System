@@ -40,6 +40,9 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
       licenseNumber: '',
       licenseExpiry: '',
       vehicleNumber: '',
+      insuranceProvider: '',
+      insurancePolicyNumber: '',
+      insuranceExpiry: '',
       address: '',
       driverNotes: '',
     },
@@ -64,13 +67,17 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
           licenseNumber: user.driver?.licenseNumber || '',
           licenseExpiry: user.driver?.licenseExpiry?.slice(0, 10) || '',
           vehicleNumber: user.driver?.vehicleNumber || '',
+          insuranceProvider: user.driver?.insuranceProvider || '',
+          insurancePolicyNumber: user.driver?.insurancePolicyNumber || '',
+          insuranceExpiry: user.driver?.insuranceExpiry?.slice(0, 10) || '',
           address: user.driver?.address || '',
           driverNotes: user.driver?.notes || '',
         });
       } else {
         reset({
           firstName: '', lastName: '', email: '', phone: '', roleId: '', status: 'active', password: '',
-          nicNumber: '', licenseNumber: '', licenseExpiry: '', vehicleNumber: '', address: '', driverNotes: '',
+          nicNumber: '', licenseNumber: '', licenseExpiry: '', vehicleNumber: '',
+          insuranceProvider: '', insurancePolicyNumber: '', insuranceExpiry: '', address: '', driverNotes: '',
         });
       }
     }
@@ -94,6 +101,9 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
       payload.licenseNumber = values.licenseNumber;
       payload.licenseExpiry = values.licenseExpiry;
       payload.vehicleNumber = values.vehicleNumber || null;
+      payload.insuranceProvider = values.insuranceProvider || null;
+      payload.insurancePolicyNumber = values.insurancePolicyNumber || null;
+      payload.insuranceExpiry = values.insuranceExpiry || null;
       payload.address = values.address || null;
       payload.driverNotes = values.driverNotes || null;
     }
@@ -161,8 +171,28 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
           </Grid>
           {!isEdit && (
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Controller name="password" control={control} rules={{ required: 'Required', minLength: { value: 8, message: 'Min 8 characters' } }}
-                render={({ field }) => <TextField {...field} type="password" label="Password" fullWidth error={!!errors.password} helperText={errors.password?.message} />} />
+              <Controller
+                name="password"
+                control={control}
+                rules={{
+                  required: 'Required',
+                  minLength: { value: 8, message: 'Min 8 characters' },
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/,
+                    message: 'Must include uppercase, lowercase, and a number',
+                  },
+                }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="password"
+                    label="Password"
+                    fullWidth
+                    error={!!errors.password}
+                    helperText={errors.password?.message || 'Min 8 chars, with uppercase, lowercase & a number'}
+                  />
+                )}
+              />
             </Grid>
           )}
         </Grid>
@@ -190,6 +220,18 @@ export default function UserFormDialog({ open, user = null, submitting = false, 
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller name="vehicleNumber" control={control}
                   render={({ field }) => <TextField {...field} label="Vehicle Number" fullWidth />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="insuranceProvider" control={control}
+                  render={({ field }) => <TextField {...field} label="Insurance Provider" fullWidth placeholder="e.g., Ceylinco" />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="insurancePolicyNumber" control={control}
+                  render={({ field }) => <TextField {...field} label="Insurance Policy No." fullWidth />} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Controller name="insuranceExpiry" control={control}
+                  render={({ field }) => <TextField {...field} type="date" label="Insurance Expiry" fullWidth InputLabelProps={{ shrink: true }} />} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller name="address" control={control}

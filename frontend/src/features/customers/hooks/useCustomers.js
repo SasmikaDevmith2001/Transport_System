@@ -21,7 +21,12 @@ export function useCreateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: customersApi.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      // Customer creation auto-creates a Location from the address, so the
+      // locations cache must be refreshed too.
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+    },
   });
 }
 
@@ -29,7 +34,10 @@ export function useUpdateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }) => customersApi.update(id, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+    },
   });
 }
 
@@ -37,6 +45,9 @@ export function useDeleteCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: customersApi.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+    },
   });
 }

@@ -32,7 +32,9 @@ import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
 import TripDetailDrawer from '../components/TripDetailDrawer';
+import MenuItem from '@mui/material/MenuItem';
 import { useTripsList, usePendingApprovals, useApproveTrip } from '../hooks/useTrips';
+import { useActiveDrivers } from '../../drivers/hooks/useDrivers';
 import { useAuth } from '../../../contexts/AuthContext';
 import { tripsApi } from '../api/tripsApi';
 import { exportTripReportsToExcel } from '../utils/tripReportExcel';
@@ -91,12 +93,17 @@ export default function BusinessTripsPage() {
   const [sortBy, setSortBy] = useState('completedAt');
   const [sortOrder, setSortOrder] = useState('DESC');
   const [viewingTrip, setViewingTrip] = useState(null);
-  const [month, setMonth] = useState(''); // 'YYYY-MM' or '' for all
-  const [exporting, setExporting] = useState(false);
   const currentMonth = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }, []);
+  const [month, setMonth] = useState(currentMonth); // defaults to current month
+  const [rangeFrom, setRangeFrom] = useState(''); // explicit date range overrides month
+  const [rangeTo, setRangeTo] = useState('');
+  const [driverId, setDriverId] = useState(''); // vehicle/driver filter
+  const [exporting, setExporting] = useState(false);
+  const { data: activeDrivers = [] } = useActiveDrivers();
+  const useRange = !!(rangeFrom || rangeTo);
 
   // Approvals state
   const [appPage, setAppPage] = useState(1);
@@ -108,7 +115,9 @@ export default function BusinessTripsPage() {
   const [expandedStop, setExpandedStop] = useState(null);
 
   // Data
-  const { dateFrom, dateTo } = monthToRange(month);
+  const monthRange = monthToRange(month);
+  const dateFrom = useRange ? (rangeFrom || undefined) : monthRange.dateFrom;
+  const dateTo = useRange ? (rangeTo || undefined) : monthRange.dateTo;
   const completedParams = {
     page,
     pageSize,
@@ -118,6 +127,7 @@ export default function BusinessTripsPage() {
     sortOrder,
     dateFrom,
     dateTo,
+    driverId: driverId || undefined,
   };
   const { data: completedData, isLoading: completedLoading } = useTripsList(completedParams);
   const { data: approvalsData, isLoading: approvalsLoading } = usePendingApprovals({ page: appPage, pageSize: appPageSize });
@@ -128,7 +138,7 @@ export default function BusinessTripsPage() {
   // Completed trips columns
   const completedColumns = [
     { field: 'tripNumber', headerName: 'Trip #', sortable: true, render: (row) => <Typography variant="body2" fontWeight={700}>{row.tripNumber}</Typography> },
-    { field: 'route', headerName: 'Route', render: (row) => (<Box><Typography variant="body2">{row.origin} → {row.destination}</Typography><Typography variant="caption" color="text.secondary">{row.customer?.companyName}</Typography></Box>) },
+    { field: 'route', headerName: 'Route', render: (row) => (<Typography variant="body2">{row.origin} → {row.destination}</Typography>) },
     ...(!isDriver ? [{ field: 'driver', headerName: 'Driver', render: (row) => row.driver ? `${row.driver.firstName} ${row.driver.lastName}` : '—' }] : []),
     { field: 'completedAt', headerName: 'Completed', sortable: true, render: (row) => row.completedAt ? new Date(row.completedAt).toLocaleDateString() : '—' },
     { field: 'approvalStatus', headerName: 'Approval', render: (row) => row.approvalStatus ? <Chip size="small" label={row.approvalStatus} color={APPROVAL_COLORS[row.approvalStatus]} sx={{ height: 22, fontSize: 11, textTransform: 'capitalize' }} /> : '—' },
@@ -139,7 +149,7 @@ export default function BusinessTripsPage() {
   // Approval columns
   const approvalColumns = [
     { field: 'tripNumber', headerName: 'Trip #', render: (row) => <Typography variant="body2" fontWeight={700}>{row.tripNumber}</Typography> },
-    { field: 'route', headerName: 'Route', render: (row) => (<Box><Typography variant="body2">{row.origin} → {row.destination}</Typography><Typography variant="caption" color="text.secondary">{row.customer?.companyName}</Typography></Box>) },
+    { field: 'route', headerName: 'Route', render: (row) => (<Typography variant="body2">{row.origin} → {row.destination}</Typography>) },
     { field: 'driver', headerName: 'Driver', render: (row) => row.driver ? `${row.driver.firstName} ${row.driver.lastName}` : '—' },
     { field: 'completedAt', headerName: 'Completed', render: (row) => row.completedAt ? new Date(row.completedAt).toLocaleDateString() : '—' },
     { field: 'actions', headerName: '', render: (row) => (
@@ -159,7 +169,7 @@ export default function BusinessTripsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const monthLabel = monthLabelFromValue(month);
+      const monthLabel = useRange ? `${rangeFrom || '...'}_to_${rangeTo || '...'}` : monthLabelFromValue(month);
       const trips = await tripsApi.listAll({
         status: 'completed',
         search: search || undefined,
@@ -167,6 +177,7 @@ export default function BusinessTripsPage() {
         sortOrder: 'ASC',
         dateFrom,
         dateTo,
+        driverId: driverId || undefined,
       });
       if (!trips.length) {
         enqueueSnackbar('No completed trips found for the selected period.', { variant: 'info' });
@@ -207,7 +218,7 @@ export default function BusinessTripsPage() {
     <Box>
       <PageHeader
         icon={<WorkHistoryIcon fontSize="medium" />}
-        title="Trip Reports"
+        title="Reports"
         description="Completed trips, mileage details, and approval management."
       />
 
@@ -233,16 +244,50 @@ export default function BusinessTripsPage() {
               label="Month"
               size="small"
               value={month}
+              disabled={useRange}
               onChange={(e) => { setPage(1); setMonth(e.target.value); }}
               InputLabelProps={{ shrink: true }}
               inputProps={{ max: currentMonth }}
-              sx={{ width: { xs: '100%', sm: 190 } }}
+              sx={{ width: { xs: '100%', sm: 170 } }}
             />
-            {month && (
-              <Button size="small" onClick={() => { setPage(1); setMonth(''); }} sx={{ whiteSpace: 'nowrap' }}>
-                Clear
+            <TextField
+              type="date"
+              label="From"
+              size="small"
+              value={rangeFrom}
+              onChange={(e) => { setPage(1); setRangeFrom(e.target.value); }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: { xs: '100%', sm: 160 } }}
+            />
+            <TextField
+              type="date"
+              label="To"
+              size="small"
+              value={rangeTo}
+              onChange={(e) => { setPage(1); setRangeTo(e.target.value); }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: { xs: '100%', sm: 160 } }}
+            />
+            {(useRange || month !== currentMonth) && (
+              <Button size="small" onClick={() => { setPage(1); setMonth(currentMonth); setRangeFrom(''); setRangeTo(''); }} sx={{ whiteSpace: 'nowrap' }}>
+                Reset
               </Button>
             )}
+            <TextField
+              select
+              label="Vehicle"
+              size="small"
+              value={driverId}
+              onChange={(e) => { setPage(1); setDriverId(e.target.value); }}
+              sx={{ width: { xs: '100%', sm: 180 } }}
+            >
+              <MenuItem value="">All Vehicles</MenuItem>
+              {activeDrivers.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.vehicleNumber || d.fullName}
+                </MenuItem>
+              ))}
+            </TextField>
             <Box sx={{ flexGrow: 1 }} />
             <Button
               variant="contained"

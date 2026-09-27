@@ -23,10 +23,11 @@ export const tripsApi = {
   create: (payload) => apiClient.post('/trips', payload).then((res) => res.data.data),
   update: (id, payload) => apiClient.put(`/trips/${id}`, payload).then((res) => res.data.data),
   assign: (id, driverId) => apiClient.patch(`/trips/${id}/assign`, { driverId }).then((res) => res.data.data),
-  updateStatus: (id, status, gps) => apiClient.patch(`/trips/${id}/status`, { status, ...gps }).then((res) => res.data.data),
+  updateStatus: (id, status, gps, extra = {}) => apiClient.patch(`/trips/${id}/status`, { status, ...gps, ...extra }).then((res) => res.data.data),
   updateStopDetails: (tripId, stopId, payload) => apiClient.patch(`/trips/${tripId}/stops/${stopId}`, payload).then((res) => res.data.data),
   remove: (id) => apiClient.delete(`/trips/${id}`).then((res) => res.data),
   listPendingApproval: (params) => apiClient.get('/trips/pending-approval', { params }).then((res) => res.data),
   approveTrip: (id, payload) => apiClient.patch(`/trips/${id}/approve`, payload).then((res) => res.data.data),
   setEmergencyStop: (id, payload) => apiClient.patch(`/trips/${id}/emergency-stop`, payload).then((res) => res.data.data),
+  reorderStops: (id, stops) => apiClient.patch(`/trips/${id}/reorder-stops`, { stops }).then((res) => res.data.data),
 };

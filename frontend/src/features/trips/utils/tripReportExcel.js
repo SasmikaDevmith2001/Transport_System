@@ -39,7 +39,6 @@ function writeTripSection(ws, trip, startRow) {
     ['Route', `: ${trip.origin || ''} → ${trip.destination || ''}`],
     ['Vehicle No', `: ${vehicleNo}`],
     ['Driver', `: ${driverName}`],
-    ['Customer', `: ${trip.customer?.companyName || '—'}`],
     ['Delivery Date', `: ${fmtDate(trip.completedAt || trip.scheduledDate)}`],
     ['Status', `: ${(trip.status || '').replace('_', ' ')} / Approval: ${trip.approvalStatus || '—'}`],
   ];
@@ -63,12 +62,12 @@ function writeTripSection(ws, trip, startRow) {
   const headerRow = ws.getRow(r);
   const headers = [
     'Location',
-    'Customer',
     'Invoice(s)',
-    'Expected (Map) KM',
-    'GPS (Actual) KM',
-    'Driver KM',
-    'Difference (Driver-GPS) KM',
+    'Expected / Map (km)',
+    'GPS Actual (km)',
+    'Driver Mileage (km)',
+    'Odometer Reading',
+    'Difference: Driver vs GPS (km)',
   ];
   headers.forEach((h, i) => {
     const cell = headerRow.getCell(i + 1);
@@ -86,17 +85,24 @@ function writeTripSection(ws, trip, startRow) {
   let totExpected = 0;
   let totGps = 0;
   let totDriver = 0;
+  let firstOdometer = null;
+  let lastOdometer = null;
 
   const bodyStart = r;
   stops.forEach((stop) => {
     const expected = num(stop.expectedMileage);
     const gps = num(stop.gpsMileage);
     const driver = num(stop.driverMileage);
+    const odometer = num(stop.odometerReading);
     const diff = gps != null && driver != null ? Number((driver - gps).toFixed(2)) : null;
 
     if (expected != null) totExpected += expected;
     if (gps != null) totGps += gps;
     if (driver != null) totDriver += driver;
+    if (odometer != null) {
+      if (firstOdometer == null) firstOdometer = odometer;
+      lastOdometer = odometer;
+    }
 
     const invoices = (stop.invoices || [])
       .map((inv) => (typeof inv === 'string' ? inv : inv?.invoiceNumber))
@@ -106,18 +112,18 @@ function writeTripSection(ws, trip, startRow) {
     const row = ws.getRow(r);
     const values = [
       stop.gpsLocationName || stop.locationName || '',
-      trip.customer?.companyName || '',
       invoices,
       expected,
       gps,
       driver,
+      odometer,
       diff,
     ];
     values.forEach((v, i) => {
       const cell = row.getCell(i + 1);
       cell.value = v;
       cell.border = allBorders;
-      if (i >= 3) {
+      if (i >= 2) {
         cell.alignment = { horizontal: 'center' };
         cell.numFmt = '#,##0.00';
       }
@@ -139,15 +145,19 @@ function writeTripSection(ws, trip, startRow) {
   const totalRow = ws.getRow(r);
   totalRow.getCell(1).value = 'Total';
   totalRow.getCell(1).font = { bold: true };
-  ws.mergeCells(r, 1, r, 3);
+  ws.mergeCells(r, 1, r, 2);
+  // Odometer total = distance travelled = last reading − first reading.
+  const odometerDistance =
+    firstOdometer != null && lastOdometer != null ? Number((lastOdometer - firstOdometer).toFixed(2)) : 0;
   const totals = [
     Number(totExpected.toFixed(2)),
     Number(totGps.toFixed(2)),
     Number(totDriver.toFixed(2)),
+    odometerDistance,
     Number((totDriver - totGps).toFixed(2)),
   ];
   totals.forEach((v, i) => {
-    const cell = totalRow.getCell(i + 4);
+    const cell = totalRow.getCell(i + 3);
     cell.value = v;
     cell.font = { bold: true };
     cell.numFmt = '#,##0.00';
@@ -179,13 +189,24 @@ export async function exportTripReportsToExcel(trips, opts = {}) {
     properties: { defaultColWidth: 18 },
     views: [{ showGridLines: false }],
   });
+  // Columns A..L
   summary.columns = [
-    { width: 16 }, { width: 26 }, { width: 22 }, { width: 20 },
-    { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 22 },
+    { width: 16 }, // A Trip No
+    { width: 28 }, // B Route
+    { width: 18 }, // C Driver
+    { width: 12 }, // D Vehicle
+    { width: 14 }, // E Delivery Date
+    { width: 14 }, // F Shortest Path KM
+    { width: 16 }, // G Actual google mileage
+    { width: 16 }, // H Final Odometer reading
+    { width: 20 }, // I Odometer vs actual
+    { width: 20 }, // J Odometer vs shortest
+    { width: 20 }, // K Actual vs shortest
   ];
+  const LAST_COL = 11; // K
 
   // Title band
-  summary.mergeCells('A1:I1');
+  summary.mergeCells(1, 1, 1, LAST_COL);
   const titleCell = summary.getCell('A1');
   titleCell.value = COMPANY_NAME;
   titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
@@ -193,14 +214,26 @@ export async function exportTripReportsToExcel(trips, opts = {}) {
   titleCell.fill = HEADER_FILL;
   summary.getRow(1).height = 28;
 
-  summary.mergeCells('A2:I2');
+  summary.mergeCells(2, 1, 2, LAST_COL);
   const subCell = summary.getCell('A2');
   subCell.value = `Trip Distance Report${monthLabel ? ` — ${monthLabel}` : ''}`;
   subCell.font = { bold: true, size: 12 };
   subCell.alignment = { horizontal: 'center' };
 
   // Column headers
-  const sHeaders = ['Trip No', 'Route', 'Customer', 'Driver', 'Vehicle', 'Delivery Date', 'GPS (Actual) KM', 'Driver KM', 'Difference (Driver-GPS) KM'];
+  const sHeaders = [
+    'Trip No',
+    'Route',
+    'Driver',
+    'Vehicle',
+    'Delivery Date',
+    'Shortest Path (km)',
+    'Actual Google Mileage (km)',
+    'Final Odometer Reading (km)',
+    'Difference: Odometer vs Actual (km)',
+    'Difference: Odometer vs Shortest (km)',
+    'Difference: Actual vs Shortest (km)',
+  ];
   const sHeadRow = summary.getRow(4);
   sHeaders.forEach((h, i) => {
     const cell = sHeadRow.getCell(i + 1);
@@ -208,72 +241,88 @@ export async function exportTripReportsToExcel(trips, opts = {}) {
     cell.font = { bold: true };
     cell.fill = SUBHEAD_FILL;
     cell.border = allBorders;
-    cell.alignment = { horizontal: 'center', wrapText: true };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
+  sHeadRow.height = 42;
 
-  let sr = 5;
-  let grandGps = 0;
-  let grandDriver = 0;
+  const FIRST_DATA_ROW = 5;
+  let sr = FIRST_DATA_ROW;
   trips.forEach((trip) => {
     const stops = trip.stops || [];
-    const gpsTot = stops.reduce((s, st) => s + (num(st.gpsMileage) || 0), 0);
-    const driverTot = stops.reduce((s, st) => s + (num(st.driverMileage) || 0), 0);
-    grandGps += gpsTot;
-    grandDriver += driverTot;
+    const shortest = stops.reduce((s, st) => s + (num(st.expectedMileage) || 0), 0);
+    const googleActual = stops.reduce((s, st) => s + (num(st.driverMileage) || 0), 0);
 
-    const diffTot = Number((driverTot - gpsTot).toFixed(2));
+    // The FINAL odometer reading is the one captured when the trip was
+    // completed at the end point (trip.finalOdometerReading), not a per-stop
+    // reading — those only reflect the meter at intermediate delivery stops.
+    const finalOdometer = num(trip.finalOdometerReading) || 0;
 
     const row = summary.getRow(sr);
-    const vals = [
-      trip.tripNumber || '',
-      `${trip.origin || ''} → ${trip.destination || ''}`,
-      trip.customer?.companyName || '—',
-      trip.driver ? `${trip.driver.firstName} ${trip.driver.lastName}` : '—',
-      trip.driver?.vehicleNumber || '—',
-      fmtDate(trip.completedAt || trip.scheduledDate),
-      Number(gpsTot.toFixed(2)),
-      Number(driverTot.toFixed(2)),
-      diffTot,
-    ];
-    vals.forEach((v, i) => {
-      const cell = row.getCell(i + 1);
-      cell.value = v;
+    // A..H: literal values; I..K: Excel formulas referencing F/G/H.
+    row.getCell(1).value = trip.tripNumber || '';
+    row.getCell(2).value = `${trip.origin || ''} → ${trip.destination || ''}`;
+    row.getCell(3).value = trip.driver ? `${trip.driver.firstName} ${trip.driver.lastName}` : '—';
+    row.getCell(4).value = trip.driver?.vehicleNumber || '—';
+    row.getCell(5).value = fmtDate(trip.completedAt || trip.scheduledDate);
+    row.getCell(6).value = Number(shortest.toFixed(2)); // F Shortest Path
+    row.getCell(7).value = Number(googleActual.toFixed(2)); // G Actual google mileage
+    row.getCell(8).value = finalOdometer; // H Final odometer reading (e.g. 50097)
+
+    // I = Final Odometer − Actual google
+    row.getCell(9).value = { formula: `H${sr}-G${sr}` };
+    // J = Final Odometer − Shortest Path
+    row.getCell(10).value = { formula: `H${sr}-F${sr}` };
+    // K = Actual google − Shortest Path
+    row.getCell(11).value = { formula: `G${sr}-F${sr}` };
+
+    for (let c = 1; c <= LAST_COL; c += 1) {
+      const cell = row.getCell(c);
       cell.border = allBorders;
-      if (i >= 6) { cell.numFmt = '#,##0.00'; cell.alignment = { horizontal: 'center' }; }
-    });
-    // Colour the difference cell: green if within 10% of GPS, red otherwise.
-    const diffCell = row.getCell(9);
-    const pct = gpsTot > 0 ? (Math.abs(diffTot) / gpsTot) * 100 : 0;
-    diffCell.font = {
-      bold: true,
-      color: { argb: Math.abs(diffTot) < 0.01 ? 'FF1E7E34' : pct > 10 ? 'FFC00000' : 'FFB8860B' },
-    };
+      if (c >= 6) { cell.numFmt = '#,##0.00'; cell.alignment = { horizontal: 'center' }; }
+    }
+    // Emphasise the difference columns (I, J, K).
+    [9, 10, 11].forEach((c) => { row.getCell(c).font = { bold: true, color: { argb: 'FFC00000' } }; });
     sr += 1;
   });
 
-  // Grand total
+  const LAST_DATA_ROW = sr - 1;
+
+  // Grand total row — sum F..K with SUM formulas.
   const gRow = summary.getRow(sr);
   gRow.getCell(1).value = 'TOTAL';
   gRow.getCell(1).font = { bold: true };
-  summary.mergeCells(sr, 1, sr, 6);
-  const grandDiff = Number((grandDriver - grandGps).toFixed(2));
-  [grandGps, grandDriver, grandDiff].forEach((v, i) => {
-    const cell = gRow.getCell(i + 7);
-    cell.value = Number(v.toFixed(2));
+  summary.mergeCells(sr, 1, sr, 5);
+  for (let c = 6; c <= LAST_COL; c += 1) {
+    const cell = gRow.getCell(c);
     cell.font = { bold: true };
-    cell.numFmt = '#,##0.00';
     cell.fill = TOTAL_FILL;
     cell.alignment = { horizontal: 'center' };
-  });
-  for (let c = 1; c <= 9; c += 1) gRow.getCell(c).border = allBorders;
+    cell.border = allBorders;
+
+    // Column H is the FINAL odometer reading (absolute value) — summing it
+    // across trips is meaningless, so leave it blank in the total.
+    if (c === 8) {
+      cell.value = '';
+      continue;
+    }
+
+    const colLetter = summary.getColumn(c).letter;
+    if (LAST_DATA_ROW >= FIRST_DATA_ROW) {
+      cell.value = { formula: `SUM(${colLetter}${FIRST_DATA_ROW}:${colLetter}${LAST_DATA_ROW})` };
+    } else {
+      cell.value = 0;
+    }
+    cell.numFmt = '#,##0.00';
+  }
+  for (let c = 1; c <= LAST_COL; c += 1) gRow.getCell(c).border = allBorders;
 
   // ============ Details sheet (one section per trip) ======================
   const details = workbook.addWorksheet('Trip Details', {
     views: [{ showGridLines: false }],
   });
   details.columns = [
-    { width: 28 }, { width: 22 }, { width: 22 }, { width: 16 },
-    { width: 16 }, { width: 14 }, { width: 22 },
+    { width: 28 }, { width: 22 }, { width: 16 },
+    { width: 16 }, { width: 14 }, { width: 14 }, { width: 22 },
   ];
 
   // Details title

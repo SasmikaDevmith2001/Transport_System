@@ -29,6 +29,8 @@ import StraightenIcon from '@mui/icons-material/Straighten';
 import PersonIcon from '@mui/icons-material/Person';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PhoneIcon from '@mui/icons-material/Phone';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useCustomersList } from '../../customers/hooks/useCustomers';
 import { useActiveLocations } from '../../locations/hooks/useLocations';
@@ -46,6 +48,7 @@ const tripSchema = Joi.object({
   driverId: Joi.number().integer().positive().allow(null, ''),
   originLocationId: Joi.number().integer().positive().allow(null, ''),
   origin: Joi.string().trim().min(1).max(255).required(),
+  endPoint: Joi.string().trim().allow('').max(255),
   scheduledDate: Joi.string().required().messages({ 'string.empty': 'Scheduled date is required' }),
   scheduledTime: Joi.string().trim().allow(''),
   cargoDescription: Joi.string().trim().allow('').max(255),
@@ -58,12 +61,60 @@ const DEFAULTS = {
   driverId: '',
   originLocationId: '',
   origin: '',
+  endPoint: '',
   scheduledDate: '',
   scheduledTime: '',
   cargoDescription: '',
   remarks: '',
   stops: [{ locationId: '', locationName: '' }],
 };
+
+// Row showing a document's expiry date, days left, and active/inactive status.
+function ExpiryRow({ icon, label, date, days }) {
+  // "active" while the document is still valid (days >= 0), else "inactive".
+  const hasDate = date != null && date !== '';
+  const isActive = hasDate && days != null && days >= 0;
+  const expiringSoon = isActive && days <= 30;
+
+  let statusColor = 'default';
+  let statusLabel = 'Unknown';
+  if (hasDate) {
+    if (!isActive) {
+      statusColor = 'error';
+      statusLabel = 'Inactive';
+    } else if (expiringSoon) {
+      statusColor = 'warning';
+      statusLabel = 'Active';
+    } else {
+      statusColor = 'success';
+      statusLabel = 'Active';
+    }
+  }
+
+  let daysText = '—';
+  if (hasDate && days != null) {
+    daysText = days >= 0 ? `${days} day${days === 1 ? '' : 's'} left` : `expired ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`;
+  }
+
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      {icon}
+      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 66 }}>
+        {label}:
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        {hasDate ? `${date} • ${daysText}` : 'Not set'}
+      </Typography>
+      <Chip
+        size="small"
+        label={statusLabel}
+        color={statusColor}
+        variant={statusColor === 'success' ? 'outlined' : 'filled'}
+        sx={{ height: 18, fontSize: 9, fontWeight: 700, ml: 'auto' }}
+      />
+    </Stack>
+  );
+}
 
 export default function TripFormDialog({ open, trip = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!trip;
@@ -90,12 +141,15 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
 
   const watchedDriverId = watch('driverId');
   const watchedOrigin = watch('origin');
+  const watchedEndPoint = watch('endPoint');
   const watchedStops = watch('stops');
   const selectedDriver = drivers.find((d) => d.id === watchedDriverId) || null;
 
-  // Auto-generated trip name: "Origin → Final Destination".
+  // Auto-generated trip name: "Origin → Final Destination [→ End Point]".
   const finalDestination = (watchedStops || []).filter((s) => s?.locationName?.trim()).slice(-1)[0]?.locationName || '';
-  const autoTripName = watchedOrigin && finalDestination ? `${watchedOrigin} → ${finalDestination}` : '';
+  const autoTripName = watchedOrigin && finalDestination
+    ? `${watchedOrigin} → ${finalDestination}${watchedEndPoint ? ` → ${watchedEndPoint}` : ''}`
+    : '';
 
   const [distances, setDistances] = useState([]); 
   const [totalDistance, setTotalDistance] = useState(null);
@@ -163,12 +217,13 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
               driverId: trip.driverId || '',
               originLocationId: '',
               origin: trip.origin,
+              endPoint: trip.endPoint || '',
               scheduledDate: trip.scheduledDate,
               scheduledTime: trip.scheduledTime?.slice(0, 5) || '',
               cargoDescription: trip.cargoDescription || '',
               remarks: trip.remarks || '',
               stops: (trip.stops || []).map((s) => ({
-                locationId: '',
+                locationId: s.locationId || '',
                 locationName: s.locationName,
               })),
             }
@@ -319,6 +374,24 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                       {selectedDriver.licenseNumber ? ` • Licence: ${selectedDriver.licenseNumber}` : ''}
                     </Typography>
                   </Stack>
+
+                  <Divider sx={{ my: 0.25 }} />
+
+                  {/* License expiry */}
+                  <ExpiryRow
+                    icon={<BadgeOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />}
+                    label="License"
+                    date={selectedDriver.licenseExpiry}
+                    days={selectedDriver.licenseDaysLeft}
+                  />
+
+                  {/* Insurance expiry */}
+                  <ExpiryRow
+                    icon={<VerifiedUserOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />}
+                    label="Insurance"
+                    date={selectedDriver.insuranceExpiry}
+                    days={selectedDriver.insuranceDaysLeft}
+                  />
                 </Stack>
               </Paper>
             )}
@@ -350,6 +423,39 @@ export default function TripFormDialog({ open, trip = null, submitting = false, 
                       error={!!errors.origin}
                       helperText={errors.origin?.message}
                       placeholder="Search saved locations or type manually"
+                    />
+                  )}
+                />
+              )}
+            />
+
+            {/* End Point — where the trip finishes (e.g. return to depot) */}
+            <Controller
+              name="endPoint"
+              control={control}
+              render={({ field }) => (
+                <Autocomplete
+                  freeSolo
+                  options={locations}
+                  getOptionLabel={(opt) => (typeof opt === 'string' ? opt : opt.name)}
+                  inputValue={field.value}
+                  onInputChange={(_, val) => field.onChange(val)}
+                  onChange={(_, val) => { if (val && typeof val === 'object') field.onChange(val.name); }}
+                  renderOption={(props, opt) => (
+                    <li {...props} key={opt.id}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>{opt.name}</Typography>
+                        {opt.customer && <Typography variant="caption" color="text.secondary">{opt.customer.companyName}</Typography>}
+                      </Box>
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="End Point (optional)"
+                      size="small"
+                      placeholder="Where the trip finishes, e.g. depot / warehouse"
+                      helperText="The trip is considered ended once the vehicle reaches this point"
                     />
                   )}
                 />

@@ -11,6 +11,7 @@ TripModel.init(
     driverId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true, field: 'driver_id' },
     origin: { type: DataTypes.STRING(255), allowNull: false },
     destination: { type: DataTypes.STRING(255), allowNull: false },
+    endPoint: { type: DataTypes.STRING(255), allowNull: true, field: 'end_point' },
     scheduledDate: { type: DataTypes.DATEONLY, allowNull: false, field: 'scheduled_date' },
     scheduledTime: { type: DataTypes.TIME, allowNull: true, field: 'scheduled_time' },
     status: {
@@ -21,6 +22,7 @@ TripModel.init(
     cargoDescription: { type: DataTypes.STRING(255), allowNull: true, field: 'cargo_description' },
     remarks: { type: DataTypes.TEXT, allowNull: true },
     mileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    finalOdometerReading: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'final_odometer_reading' },
     invoiceNumber: { type: DataTypes.STRING(100), allowNull: true, field: 'invoice_number' },
     startLatitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true, field: 'start_latitude' },
     startLongitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true, field: 'start_longitude' },
