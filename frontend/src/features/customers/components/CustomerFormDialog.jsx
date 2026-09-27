@@ -369,7 +369,12 @@ export default function CustomerFormDialog({ open, customer = null, submitting =
         <Button
           onClick={handleSubmit(
             (values) => {
-              const payload = { ...values, divisionId: values.divisionId ? Number(values.divisionId) : null };
+              const payload = {
+                ...values,
+                divisionId: values.divisionId ? Number(values.divisionId) : null,
+                latitude: addressPos?.lat ?? null,
+                longitude: addressPos?.lng ?? null,
+              };
               onSubmit(payload);
             },
             (validationErrors) => {

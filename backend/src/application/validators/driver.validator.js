@@ -11,6 +11,9 @@ const createDriverSchema = Joi.object({
   licenseExpiry: Joi.date().iso().required(),
   address: Joi.string().trim().max(255).allow(null, ''),
   vehicleNumber: Joi.string().trim().max(30).allow(null, ''),
+  insuranceProvider: Joi.string().trim().max(150).allow(null, ''),
+  insurancePolicyNumber: Joi.string().trim().max(100).allow(null, ''),
+  insuranceExpiry: Joi.date().iso().allow(null, ''),
   status: Joi.string().valid('active', 'inactive', 'on_leave', 'suspended').default('active'),
   notes: Joi.string().trim().max(2000).allow(null, ''),
 });
@@ -25,6 +28,9 @@ const updateDriverSchema = Joi.object({
   licenseExpiry: Joi.date().iso(),
   address: Joi.string().trim().max(255).allow(null, ''),
   vehicleNumber: Joi.string().trim().max(30).allow(null, ''),
+  insuranceProvider: Joi.string().trim().max(150).allow(null, ''),
+  insurancePolicyNumber: Joi.string().trim().max(100).allow(null, ''),
+  insuranceExpiry: Joi.date().iso().allow(null, ''),
   status: Joi.string().valid('active', 'inactive', 'on_leave', 'suspended'),
   notes: Joi.string().trim().max(2000).allow(null, ''),
 }).min(1);

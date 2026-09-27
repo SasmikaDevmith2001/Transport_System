@@ -5,6 +5,9 @@ const driverFields = {
   licenseNumber: Joi.string().trim().min(3).max(50),
   licenseExpiry: Joi.string().trim(),
   vehicleNumber: Joi.string().trim().max(30).allow(null, ''),
+  insuranceProvider: Joi.string().trim().max(150).allow(null, ''),
+  insurancePolicyNumber: Joi.string().trim().max(100).allow(null, ''),
+  insuranceExpiry: Joi.string().trim().allow(null, ''),
   address: Joi.string().trim().max(255).allow(null, ''),
   driverNotes: Joi.string().trim().max(2000).allow(null, ''),
 };

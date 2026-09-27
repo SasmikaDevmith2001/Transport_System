@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { joiResolver } from '@hookform/resolvers/joi';
 import Joi from 'joi';
 import {
@@ -7,8 +7,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
-  Grid,
   Typography,
   IconButton,
   Box,
@@ -24,24 +22,21 @@ import DialogHeader from '../../../components/feedback/DialogHeader';
 const MapPicker = lazy(() => import('./MapPicker'));
 
 const locationSchema = Joi.object({
-  name: Joi.string().trim().min(1).max(150).required().messages({ 'string.empty': 'Location name is required' }),
   latitude: Joi.number().min(-90).max(90).required().messages({ 'any.required': 'Pick a location on the map', 'number.base': 'Pick a location on the map' }),
   longitude: Joi.number().min(-180).max(180).required().messages({ 'any.required': 'Pick a location on the map', 'number.base': 'Pick a location on the map' }),
 });
 
 const DEFAULTS = {
-  name: '',
   latitude: '',
   longitude: '',
 };
 
-export default function LocationFormDialog({ open, location = null, submitting = false, onSubmit, onClose }) {
+export default function LocationFormDialog({ open, location = null, customer = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!location;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const {
-    control,
     handleSubmit,
     reset,
     setValue,
@@ -52,28 +47,37 @@ export default function LocationFormDialog({ open, location = null, submitting =
   const latitude = watch('latitude');
   const longitude = watch('longitude');
 
+  // Tracks the place name/address typed into the map search box, so the
+  // saved location name reflects the actual address searched rather than
+  // always defaulting to the customer's company name.
+  const [pickedName, setPickedName] = useState('');
+
   useEffect(() => {
     if (open) {
       if (location) {
         reset({
-          name: location.name || '',
           latitude: location.latitude,
           longitude: location.longitude,
         });
+        setPickedName(location.name || '');
       } else {
         reset(DEFAULTS);
+        setPickedName('');
       }
     }
   }, [open, location, reset]);
 
-  const handleMapChange = ({ latitude: lat, longitude: lng }) => {
+  const handleMapChange = ({ latitude: lat, longitude: lng, name }) => {
     setValue('latitude', lat, { shouldValidate: true });
     setValue('longitude', lng, { shouldValidate: true });
+    if (name) setPickedName(name);
   };
 
   const handleFormSubmit = (values) => {
     const payload = {
-      name: values.name,
+      // Prefer the address actually searched/selected on the map, then the
+      // existing location's name, then fall back to the customer's name.
+      name: pickedName || location?.name || customer?.companyName || undefined,
       latitude: values.latitude,
       longitude: values.longitude,
     };
@@ -103,27 +107,6 @@ export default function LocationFormDialog({ open, location = null, submitting =
               {errors.latitude?.message || errors.longitude?.message}
             </Typography>
           )}
-        </Paper>
-
-        {/* Details */}
-        <Paper elevation={0} sx={{ p: 2.5, mb: 3, bgcolor: 'action.hover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-            <LocationOnIcon sx={{ color: 'primary.main' }} />
-            <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', fontSize: '0.75rem' }}>
-              Location Details
-            </Typography>
-          </Box>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Controller
-                name="name"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} label="Location Name" fullWidth size="small" error={!!errors.name} helperText={errors.name?.message} placeholder="e.g., Katunayake Warehouse" />
-                )}
-              />
-            </Grid>
-          </Grid>
         </Paper>
       </DialogContent>
 

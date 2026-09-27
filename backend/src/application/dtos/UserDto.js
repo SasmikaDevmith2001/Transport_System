@@ -27,6 +27,9 @@ function toUserResponseDto(user) {
       licenseNumber: user.driver.licenseNumber,
       licenseExpiry: user.driver.licenseExpiry,
       vehicleNumber: user.driver.vehicleNumber,
+      insuranceProvider: user.driver.insuranceProvider,
+      insurancePolicyNumber: user.driver.insurancePolicyNumber,
+      insuranceExpiry: user.driver.insuranceExpiry,
       address: user.driver.address,
       notes: user.driver.notes,
     };

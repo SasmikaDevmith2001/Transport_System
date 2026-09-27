@@ -1,9 +1,11 @@
 const { NotFoundError, ValidationError } = require('../../../domain/errors');
+const { calculateExpectedMileages } = require('./calculateExpectedMileages');
 
 class UpdateTripUseCase {
-  constructor(tripRepository, logger) {
+  constructor(tripRepository, logger, locationRepository) {
     this.tripRepository = tripRepository;
     this.logger = logger;
+    this.locationRepository = locationRepository;
   }
 
   async execute(id, { stops, ...updates }, updatedBy) {
@@ -22,7 +24,11 @@ class UpdateTripUseCase {
     }
 
     if (stops) {
-      trip = await this.tripRepository.replaceStops(id, stops);
+      // Recompute expectedMileage the same way trip creation does, so edited
+      // trips keep their expected distances instead of losing them.
+      const originName = updates.origin || existing.origin;
+      const resolvedStops = await calculateExpectedMileages(stops, originName, this.locationRepository);
+      trip = await this.tripRepository.replaceStops(id, resolvedStops);
     }
 
     this.logger.info('Trip updated', { tripId: id, updatedBy });

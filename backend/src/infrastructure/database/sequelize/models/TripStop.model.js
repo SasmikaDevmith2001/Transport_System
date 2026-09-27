@@ -26,6 +26,7 @@ TripStopModel.init(
     gpsLocationName: { type: DataTypes.STRING(255), allowNull: true, field: 'gps_location_name' },
     gpsMileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'gps_mileage' },
     driverMileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'driver_mileage' },
+    odometerReading: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'odometer_reading' },
     expectedMileage: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'expected_mileage' },
     arrivedAt: { type: DataTypes.DATE, allowNull: true, field: 'arrived_at' },
     deliveredAt: { type: DataTypes.DATE, allowNull: true, field: 'delivered_at' },

@@ -94,7 +94,12 @@ export default function UsersListPage() {
       setFormOpen(false);
       setEditingUser(null);
     } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || 'Something went wrong', { variant: 'error' });
+      const data = err.response?.data;
+      // Surface specific field validation messages when present.
+      const detailMsg = Array.isArray(data?.details)
+        ? data.details.map((d) => (typeof d === 'string' ? d : d.message)).filter(Boolean).join(' • ')
+        : null;
+      enqueueSnackbar(detailMsg || data?.message || 'Something went wrong', { variant: 'error' });
     }
   };
 

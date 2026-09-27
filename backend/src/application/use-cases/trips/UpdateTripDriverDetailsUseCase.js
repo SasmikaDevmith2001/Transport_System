@@ -13,7 +13,7 @@ class UpdateTripDriverDetailsUseCase {
     this.logger = logger;
   }
 
-  async execute(tripId, stopId, { invoiceNumber, driverMileage, invoices, status, latitude, longitude, gpsLocationName, gpsMileage }, actor) {
+  async execute(tripId, stopId, { invoiceNumber, driverMileage, odometerReading, invoices, status, latitude, longitude, gpsLocationName, gpsMileage }, actor) {
     const trip = await this.tripRepository.findById(tripId);
     if (!trip) {
       throw new NotFoundError('Trip not found');
@@ -50,6 +50,7 @@ class UpdateTripDriverDetailsUseCase {
     const updates = {};
     if (invoiceNumber !== undefined) updates.invoiceNumber = invoiceNumber;
     if (driverMileage !== undefined) updates.driverMileage = driverMileage;
+    if (odometerReading !== undefined) updates.odometerReading = odometerReading;
     if (latitude !== undefined) updates.latitude = latitude;
     if (longitude !== undefined) updates.longitude = longitude;
     if (gpsLocationName !== undefined) updates.gpsLocationName = gpsLocationName;

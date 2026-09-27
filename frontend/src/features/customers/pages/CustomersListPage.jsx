@@ -38,6 +38,7 @@ export default function CustomersListPage() {
   const [locationFormOpen, setLocationFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
   const [locationCustomerId, setLocationCustomerId] = useState(null);
+  const [locationCustomer, setLocationCustomer] = useState(null);
   const [deleteLocationTarget, setDeleteLocationTarget] = useState(null);
 
   const params = { page, pageSize, search: search || undefined, status: status || undefined, sortBy, sortOrder };
@@ -88,7 +89,7 @@ export default function CustomersListPage() {
               {customerLocations.length === 0 && hasPermission('customers:create') && (
                 <IconButton
                   size="small"
-                  onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
+                  onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setLocationCustomer(row); setEditingLocation(null); setLocationFormOpen(true); }}
                   title="Add location"
                 >
                   <AddIcon fontSize="small" color="primary" />
@@ -102,7 +103,7 @@ export default function CustomersListPage() {
                     <LocationOnIcon sx={{ fontSize: 14, color: 'primary.main' }} />
                     <Typography variant="caption" fontWeight={500} sx={{ flex: 1 }}>{loc.name}</Typography>
                     {hasPermission('customers:update') && (
-                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditingLocation(loc); setLocationCustomerId(row.id); setLocationFormOpen(true); }}>
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditingLocation(loc); setLocationCustomerId(row.id); setLocationCustomer(row); setLocationFormOpen(true); }}>
                         <EditIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
@@ -119,7 +120,7 @@ export default function CustomersListPage() {
                     variant="outlined"
                     color="primary"
                     startIcon={<AddIcon />}
-                    onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
+                    onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setLocationCustomer(row); setEditingLocation(null); setLocationFormOpen(true); }}
                     sx={{ alignSelf: 'flex-start', mt: 0.5 }}
                   >
                     Add Location
@@ -291,6 +292,7 @@ export default function CustomersListPage() {
       <LocationFormDialog
         open={locationFormOpen}
         location={editingLocation ? { ...editingLocation, customerId: locationCustomerId } : null}
+        customer={locationCustomer}
         submitting={createLocation.isPending || updateLocation.isPending}
         onSubmit={async (values) => {
           try {
@@ -304,11 +306,12 @@ export default function CustomersListPage() {
             }
             setLocationFormOpen(false);
             setEditingLocation(null);
+            setLocationCustomer(null);
           } catch (err) {
             enqueueSnackbar(err.response?.data?.message || 'Failed to save location', { variant: 'error' });
           }
         }}
-        onClose={() => { setLocationFormOpen(false); setEditingLocation(null); }}
+        onClose={() => { setLocationFormOpen(false); setEditingLocation(null); setLocationCustomer(null); }}
       />
 
       <ConfirmDialog

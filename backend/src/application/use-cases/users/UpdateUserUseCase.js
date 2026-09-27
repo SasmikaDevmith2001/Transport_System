@@ -27,8 +27,19 @@ class UpdateUserUseCase {
     }
 
     // Separate driver fields from user fields
-    const { nicNumber, licenseNumber, licenseExpiry, vehicleNumber, address, driverNotes, ...userUpdates } = updates;
-    const driverFields = { nicNumber, licenseNumber, licenseExpiry, vehicleNumber, address, notes: driverNotes };
+    const {
+      nicNumber,
+      licenseNumber,
+      licenseExpiry,
+      vehicleNumber,
+      insuranceProvider,
+      insurancePolicyNumber,
+      insuranceExpiry,
+      address,
+      driverNotes,
+      ...userUpdates
+    } = updates;
+    const driverFields = { nicNumber, licenseNumber, licenseExpiry, vehicleNumber, insuranceProvider, insurancePolicyNumber, insuranceExpiry, address, notes: driverNotes };
 
     const user = await this.userRepository.update(id, { ...userUpdates, updatedBy });
 
@@ -48,6 +59,9 @@ class UpdateUserUseCase {
           ...(licenseNumber !== undefined && { licenseNumber }),
           ...(licenseExpiry !== undefined && { licenseExpiry }),
           ...(vehicleNumber !== undefined && { vehicleNumber }),
+          ...(insuranceProvider !== undefined && { insuranceProvider }),
+          ...(insurancePolicyNumber !== undefined && { insurancePolicyNumber }),
+          ...(insuranceExpiry !== undefined && { insuranceExpiry }),
           ...(address !== undefined && { address }),
           ...(driverNotes !== undefined && { notes: driverNotes }),
           status: updates.status || existing.status,

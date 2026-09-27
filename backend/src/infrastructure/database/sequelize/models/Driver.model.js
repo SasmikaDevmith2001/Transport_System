@@ -16,6 +16,9 @@ DriverModel.init(
     licenseExpiry: { type: DataTypes.DATEONLY, allowNull: false, field: 'license_expiry' },
     address: { type: DataTypes.STRING(255), allowNull: true },
     vehicleNumber: { type: DataTypes.STRING(30), allowNull: true, field: 'vehicle_number' },
+    insuranceProvider: { type: DataTypes.STRING(150), allowNull: true, field: 'insurance_provider' },
+    insurancePolicyNumber: { type: DataTypes.STRING(100), allowNull: true, field: 'insurance_policy_number' },
+    insuranceExpiry: { type: DataTypes.DATEONLY, allowNull: true, field: 'insurance_expiry' },
     status: {
       type: DataTypes.ENUM('active', 'inactive', 'on_leave', 'suspended'),
       allowNull: false,

@@ -33,11 +33,29 @@ export default function MapPicker({ latitude, longitude, onChange, height = 350 
   const center = position || SRI_LANKA_CENTER;
   const zoom = position ? 15 : 8;
 
+  const reverseGeocode = useCallback((lat, lng, callback) => {
+    if (!window.google?.maps) return;
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === 'OK' && results?.length) {
+        // Google returns multiple matches ordered from most to least
+        // specific. Prefer an exact rooftop/street-address match over a
+        // generic route/locality-level result so the full street address
+        // (with building number) is used when available.
+        const precise = results.find(
+          (r) => r.geometry?.location_type === 'ROOFTOP' || r.types?.includes('street_address') || r.types?.includes('premise')
+        );
+        callback((precise || results[0]).formatted_address);
+      }
+    });
+  }, []);
+
   const handleMapClick = useCallback((e) => {
     const lat = e.latLng.lat();
     const lng = e.latLng.lng();
     onChange({ latitude: lat, longitude: lng });
-  }, [onChange]);
+    reverseGeocode(lat, lng, (address) => onChange({ latitude: lat, longitude: lng, name: address }));
+  }, [onChange, reverseGeocode]);
 
   const handlePlacesChanged = () => {
     const places = searchBoxRef.current?.getPlaces();
@@ -46,7 +64,12 @@ export default function MapPicker({ latitude, longitude, onChange, height = 350 
       if (place.geometry?.location) {
         const lat = place.geometry.location.lat();
         const lng = place.geometry.location.lng();
-        onChange({ latitude: lat, longitude: lng });
+        // For named landmarks/businesses, formatted_address usually omits
+        // the place's proper name (e.g. a shrine or shop name), so prepend
+        // it to the address for a complete, human-readable location.
+        const address = place.formatted_address || '';
+        const name = place.name && !address.startsWith(place.name) ? `${place.name}, ${address}` : address || place.name || '';
+        onChange({ latitude: lat, longitude: lng, name });
         if (mapRef.current) {
           mapRef.current.panTo({ lat, lng });
           mapRef.current.setZoom(15);
@@ -62,6 +85,7 @@ export default function MapPicker({ latitude, longitude, onChange, height = 350 
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         onChange({ latitude: lat, longitude: lng });
+        reverseGeocode(lat, lng, (address) => onChange({ latitude: lat, longitude: lng, name: address }));
         if (mapRef.current) {
           mapRef.current.panTo({ lat, lng });
           mapRef.current.setZoom(15);

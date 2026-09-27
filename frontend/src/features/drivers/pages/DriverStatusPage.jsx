@@ -172,7 +172,87 @@ export default function DriverStatusPage() {
           ))}
         </div>
       )}
+
+      {/* Trip-wise table (drivers currently on a trip) */}
+      <TripWiseTable
+        rows={rows.filter((r) => r.activeTrip)}
+        loading={loading}
+      />
     </Box>
+  );
+}
+
+// Table of drivers currently on a trip, shown trip-by-trip.
+function TripWiseTable({ rows, loading }) {
+  return (
+    <div className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 dark:bg-slate-800 dark:ring-slate-700">
+      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-slate-700">
+        <h3 className="text-base font-bold text-gray-800 dark:text-slate-100">Trips in Progress</h3>
+        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{rows.length} active</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-blue-50/60 text-left text-xs font-bold uppercase tracking-wide text-gray-500 dark:bg-slate-700/40 dark:text-slate-400">
+              <th className="px-5 py-3">Trip</th>
+              <th className="px-5 py-3">Driver</th>
+              <th className="px-5 py-3">Route</th>
+              <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Speed</th>
+              <th className="px-5 py-3">Last GPS</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-6 text-center text-gray-400">Loading…</td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-6 text-center text-gray-400 dark:text-slate-500">
+                  No trips in progress right now.
+                </td>
+              </tr>
+            ) : (
+              rows.map(({ driver, live, activeTrip, status }) => {
+                const meta = STATUS_META[status];
+                return (
+                  <tr key={activeTrip.id} className="text-gray-700 dark:text-slate-200">
+                    <td className="px-5 py-3 font-semibold">{activeTrip.tripNumber}</td>
+                    <td className="px-5 py-3">
+                      {driver.firstName} {driver.lastName}
+                      <span className="block text-xs text-gray-400 dark:text-slate-500">
+                        {driver.vehicleNumber || 'No vehicle'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="block max-w-[220px] truncate">
+                        {activeTrip.origin} → {activeTrip.destination}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span
+                        className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                        style={{ backgroundColor: meta.tint, color: meta.dot }}
+                      >
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      {live?.position?.speed != null ? `${live.position.speed.toFixed(0)} km/h` : '—'}
+                    </td>
+                    <td className="px-5 py-3 text-gray-500 dark:text-slate-400">
+                      {live?.position?.recordedAt ? timeAgo(live.position.recordedAt) : '—'}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

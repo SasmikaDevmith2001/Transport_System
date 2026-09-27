@@ -15,6 +15,7 @@ class TripController {
     approveTripUseCase,
     listPendingApprovalsUseCase,
     setEmergencyStopUseCase,
+    reorderTripStopsUseCase,
   }) {
     this.createTripUseCase = createTripUseCase;
     this.getTripUseCase = getTripUseCase;
@@ -27,6 +28,7 @@ class TripController {
     this.approveTripUseCase = approveTripUseCase;
     this.listPendingApprovalsUseCase = listPendingApprovalsUseCase;
     this.setEmergencyStopUseCase = setEmergencyStopUseCase;
+    this.reorderTripStopsUseCase = reorderTripStopsUseCase;
   }
 
   create = async (req, res) => {
@@ -83,10 +85,13 @@ class TripController {
   };
 
   updateStatus = async (req, res) => {
-    const trip = await this.updateTripStatusUseCase.execute(req.params.id, req.body.status, req.user, {
-      latitude: req.body.latitude,
-      longitude: req.body.longitude,
-    });
+    const trip = await this.updateTripStatusUseCase.execute(
+      req.params.id,
+      req.body.status,
+      req.user,
+      { latitude: req.body.latitude, longitude: req.body.longitude },
+      { finalOdometerReading: req.body.finalOdometerReading }
+    );
     return ApiResponse.success(res, {
       message: 'Trip status updated successfully',
       data: toTripResponseDto(trip),
@@ -122,6 +127,18 @@ class TripController {
     );
     return ApiResponse.success(res, {
       message: req.body.active ? 'Emergency stop activated' : 'Emergency stop cleared',
+      data: toTripResponseDto(trip),
+    });
+  };
+
+  reorderStops = async (req, res) => {
+    const trip = await this.reorderTripStopsUseCase.execute(
+      Number(req.params.id),
+      req.body.stops,
+      req.user
+    );
+    return ApiResponse.success(res, {
+      message: 'Stops reordered successfully',
       data: toTripResponseDto(trip),
     });
   };
