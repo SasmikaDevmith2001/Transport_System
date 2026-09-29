@@ -18,7 +18,7 @@ class UpdateTripStatusUseCase {
     this.logger = logger;
   }
 
-  async execute(tripId, nextStatus, actor, gps = {}) {
+  async execute(tripId, nextStatus, actor, gps = {}, extra = {}) {
     const trip = await this.tripRepository.findById(tripId);
     if (!trip) {
       throw new NotFoundError('Trip not found');
@@ -41,9 +41,13 @@ class UpdateTripStatusUseCase {
       updates[timestampField] = new Date();
     }
 
-    // When trip is completed, auto-set approval status to pending for admin review
+    // When trip is completed, auto-set approval status to pending for admin
+    // review, and record the driver's final vehicle meter reading if given.
     if (nextStatus === 'completed') {
       updates.approvalStatus = 'pending';
+      if (extra.finalOdometerReading != null) {
+        updates.finalOdometerReading = extra.finalOdometerReading;
+      }
     }
 
     // Capture GPS when starting the trip

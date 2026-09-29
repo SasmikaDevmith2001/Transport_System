@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
+import PeopleIcon from '@mui/icons-material/People';
 import IconButton from '@mui/material/IconButton';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
@@ -93,7 +94,12 @@ export default function UsersListPage() {
       setFormOpen(false);
       setEditingUser(null);
     } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || 'Something went wrong', { variant: 'error' });
+      const data = err.response?.data;
+      // Surface specific field validation messages when present.
+      const detailMsg = Array.isArray(data?.details)
+        ? data.details.map((d) => (typeof d === 'string' ? d : d.message)).filter(Boolean).join(' • ')
+        : null;
+      enqueueSnackbar(detailMsg || data?.message || 'Something went wrong', { variant: 'error' });
     }
   };
 
@@ -110,6 +116,7 @@ export default function UsersListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<PeopleIcon fontSize="medium" />}
         title="User Management"
         description="Manage system users, roles, and account access."
         actions={
@@ -136,7 +143,7 @@ export default function UsersListPage() {
           setPage(1);
           setSearch(e.target.value);
         }}
-        sx={{ mb: 2, width: { xs: '100%', sm: 340 } }}
+        sx={{ mb: 2, width: { xs: '100%', sm: 360 } }}
         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
       />
 

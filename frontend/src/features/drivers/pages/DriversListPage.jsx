@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Tooltip } from '@mui/material';
+import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Tooltip, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import BadgeIcon from '@mui/icons-material/Badge';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -16,10 +16,45 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 const DRIVER_STATUS_COLORS = { active: 'success', inactive: 'default', on_leave: 'warning', suspended: 'error' };
 
-function isExpiringSoon(dateStr) {
-  if (!dateStr) return false;
-  const daysLeft = (new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  return daysLeft <= 30;
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+// Renders a date with a status chip: Expired / Expiring (<=30d) / Valid.
+function ExpiryCell({ date, label }) {
+  const days = daysUntil(date);
+  if (days == null) {
+    return <Typography variant="body2" color="text.secondary">—</Typography>;
+  }
+
+  let color = 'success';
+  let text = 'Valid';
+  let tip = `${label} is valid`;
+  if (days < 0) {
+    color = 'error';
+    text = 'Expired';
+    tip = `${label} expired ${Math.abs(days)} day(s) ago`;
+  } else if (days <= 30) {
+    color = 'warning';
+    text = `${days}d left`;
+    tip = `${label} expires within 30 days`;
+  }
+
+  return (
+    <Stack direction="row" spacing={0.75} alignItems="center">
+      <Typography variant="body2">{date}</Typography>
+      <Tooltip title={tip}>
+        <Chip
+          size="small"
+          label={text}
+          color={color}
+          variant={color === 'success' ? 'outlined' : 'filled'}
+          sx={{ height: 20, fontSize: 10, fontWeight: 700 }}
+        />
+      </Tooltip>
+    </Stack>
+  );
 }
 
 export default function DriversListPage() {
@@ -71,18 +106,15 @@ export default function DriversListPage() {
       field: 'licenseExpiry',
       headerName: 'License Expiry',
       sortable: true,
-      render: (row) => (
-        <Stack direction="row" spacing={0.5} alignItems="center">
-          <Typography variant="body2">{row.licenseExpiry}</Typography>
-          {isExpiringSoon(row.licenseExpiry) && (
-            <Tooltip title="License expires within 30 days">
-              <WarningAmberIcon fontSize="small" color="warning" />
-            </Tooltip>
-          )}
-        </Stack>
-      ),
+      render: (row) => <ExpiryCell date={row.licenseExpiry} label="License" />,
     },
     { field: 'vehicleNumber', headerName: 'Vehicle', sortable: false, render: (row) => row.vehicleNumber || '-' },
+    {
+      field: 'insuranceExpiry',
+      headerName: 'Insurance',
+      sortable: false,
+      render: (row) => <ExpiryCell date={row.insuranceExpiry} label="Insurance" />,
+    },
     {
       field: 'status',
       headerName: 'Status',
@@ -146,6 +178,7 @@ export default function DriversListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<BadgeIcon fontSize="medium" />}
         title="Driver Management"
         description="Manage driver profiles, licenses, and availability."
         actions={
@@ -163,7 +196,7 @@ export default function DriversListPage() {
           size="small"
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 390 } }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField

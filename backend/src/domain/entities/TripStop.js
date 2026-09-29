@@ -17,6 +17,7 @@ class TripStop {
     gpsLocationName,
     gpsMileage,
     driverMileage,
+    odometerReading,
     expectedMileage,
     arrivedAt,
     deliveredAt,
@@ -41,6 +42,7 @@ class TripStop {
     this.gpsLocationName = gpsLocationName;
     this.gpsMileage = gpsMileage;
     this.driverMileage = driverMileage;
+    this.odometerReading = odometerReading;
     this.expectedMileage = expectedMileage;
     this.arrivedAt = arrivedAt;
     this.deliveredAt = deliveredAt;

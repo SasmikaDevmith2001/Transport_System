@@ -7,6 +7,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAddAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { useSnackbar } from 'notistack';
 import PageHeader from '../../../components/layout-elements/PageHeader';
 import DataTable from '../../../components/data-table/DataTable';
@@ -23,6 +24,8 @@ import {
   useUpdateTripStatus,
   useUpdateTripDriverDetails,
   useDeleteTrip,
+  useSetEmergencyStop,
+  useReorderStops,
 } from '../hooks/useTrips';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -64,6 +67,8 @@ export default function TripsListPage() {
   const updateStatus = useUpdateTripStatus();
   const updateDriverDetails = useUpdateTripDriverDetails();
   const deleteTrip = useDeleteTrip();
+  const setEmergencyStop = useSetEmergencyStop();
+  const reorderStops = useReorderStops();
 
   const columns = [
     {
@@ -82,9 +87,6 @@ export default function TripsListPage() {
       render: (row) => (
         <Box>
           <Typography variant="body2">{row.origin} → {row.destination}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {row.customer?.companyName}
-          </Typography>
         </Box>
       ),
     },
@@ -118,8 +120,8 @@ export default function TripsListPage() {
               <EditIcon fontSize="small" />
             </IconButton>
           )}
-          {hasPermission('trips:assign') && row.canBeAssigned !== false && ['pending', 'assigned'].includes(row.status) && (
-            <IconButton size="small" onClick={() => setAssignTarget(row)}>
+          {hasPermission('trips:assign') && !row.driver && row.canBeAssigned !== false && ['pending', 'assigned'].includes(row.status) && (
+            <IconButton size="small" onClick={() => setAssignTarget(row)} title="Assign driver">
               <PersonAddIcon fontSize="small" />
             </IconButton>
           )}
@@ -167,13 +169,33 @@ export default function TripsListPage() {
     }
   };
 
-  const handleAdvanceStatus = async (nextStatus, gps) => {
+  const handleAdvanceStatus = async (nextStatus, gps, extra) => {
     try {
-      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus, gps: gps || {} });
+      const updated = await updateStatus.mutateAsync({ id: viewingTrip.id, status: nextStatus, gps: gps || {}, extra: extra || {} });
       enqueueSnackbar('Trip status updated', { variant: 'success' });
       setViewingTrip(updated);
     } catch (err) {
       enqueueSnackbar(err.response?.data?.message || 'Failed to update trip status', { variant: 'error' });
+    }
+  };
+
+  const handleSetEmergencyStop = async (active) => {
+    try {
+      const updated = await setEmergencyStop.mutateAsync({ id: viewingTrip.id, payload: { active } });
+      enqueueSnackbar(active ? 'Emergency stop activated' : 'Emergency stop cleared', { variant: active ? 'warning' : 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to update emergency stop', { variant: 'error' });
+    }
+  };
+
+  const handleReorderStops = async (orderedStops) => {
+    try {
+      const updated = await reorderStops.mutateAsync({ id: viewingTrip.id, stops: orderedStops });
+      enqueueSnackbar('Stops reordered by nearest distance', { variant: 'success' });
+      setViewingTrip(updated);
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || 'Failed to reorder stops', { variant: 'error' });
     }
   };
 
@@ -200,6 +222,7 @@ export default function TripsListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<LocalShippingIcon fontSize="medium" />}
         title={isDriver ? 'My Trips' : 'Trip Management'}
         description={
           isDriver
@@ -221,7 +244,7 @@ export default function TripsListPage() {
           size="small"
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 420 } }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField
@@ -280,11 +303,15 @@ export default function TripsListPage() {
         onClose={() => setViewingTrip(null)}
         onAdvanceStatus={handleAdvanceStatus}
         onUpdateStopDetails={handleUpdateDriverDetails}
+        onSetEmergencyStop={handleSetEmergencyStop}
+        onReorderStops={handleReorderStops}
         canAdvance={hasPermission('trips:update') || isDriver}
         canEditStops={isDriver || hasPermission('trips:update')}
         isDriver={isDriver}
         advancing={updateStatus.isPending}
         savingStop={updateDriverDetails.isPending}
+        settingEmergency={setEmergencyStop.isPending}
+        reordering={reorderStops.isPending}
       />
 
       <ConfirmDialog

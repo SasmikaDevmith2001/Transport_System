@@ -14,7 +14,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -26,9 +25,14 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircle';
 import EventIcon from '@mui/icons-material/Event';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import SpeedIcon from '@mui/icons-material/Speed';
 import { getCurrentPosition, getDrivingDistanceKm, reverseGeocode } from '../../../utils/gps';
 import { startTracking, stopTracking } from '../../../services/gpsTracker';
 import RouteOptimizationDialog from './RouteOptimizationDialog';
+import MeterReadingDialog from './MeterReadingDialog';
 
 const TRIP_STATUS_COLORS = {
   pending: 'default',
@@ -56,16 +60,26 @@ export default function TripDetailDrawer({
   onClose,
   onAdvanceStatus,
   onUpdateStopDetails,
+  onSetEmergencyStop,
+  onReorderStops,
   canAdvance = false,
   canEditStops = false,
   isDriver = false,
   advancing = false,
   savingStop = false,
+  settingEmergency = false,
+  reordering = false,
 }) {
   const [expandedStop, setExpandedStop] = useState(null);
   const [stopEdits, setStopEdits] = useState({});
   const [gettingGps, setGettingGps] = useState(false);
   const [showRouteDialog, setShowRouteDialog] = useState(false);
+  // Meter-reading prompt: shown before the route dialog. When submitted, it
+  // saves the odometer for `meterTarget` stop, then opens the route dialog.
+  const [meterTarget, setMeterTarget] = useState(null); // the stop awaiting a reading
+  const [savingMeter, setSavingMeter] = useState(false);
+  const [showFinalMeterDialog, setShowFinalMeterDialog] = useState(false);
+  const [completingTrip, setCompletingTrip] = useState(false);
 
   useEffect(() => {
     if (trip) {
@@ -74,6 +88,7 @@ export default function TripDetailDrawer({
         edits[stop.id] = {
           invoices: stop.invoices?.length > 0 ? [...stop.invoices] : [''],
           driverMileage: stop.driverMileage != null ? String(stop.driverMileage) : '',
+          odometerReading: stop.odometerReading != null ? String(stop.odometerReading) : '',
         };
       });
       setStopEdits(edits);
@@ -85,6 +100,93 @@ export default function TripDetailDrawer({
   const action = NEXT_STATUS_ACTIONS[trip.status];
 
   const currentStopIndex = (trip.stops || []).findIndex((s) => s.status !== 'delivered');
+
+  const pendingStops = (trip.stops || []).filter((s) => s.status !== 'delivered');
+  const pendingStopCount = pendingStops.length;
+
+  // Reorder pending stops by distance from the reference point (last delivered
+  // stop, else trip origin). direction 'asc' = nearest first, 'desc' = farthest
+  // first. Delivered stops keep their positions at the front.
+  const handleReorderByDistance = async (direction = 'asc') => {
+    if (!onReorderStops) return;
+    const stops = trip.stops || [];
+    const delivered = stops.filter((s) => s.status === 'delivered');
+    const pending = stops.filter((s) => s.status !== 'delivered');
+    if (pending.length < 2) return;
+
+    // Reference origin: last delivered stop's coords, else trip start coords.
+    let refLat = trip.startLatitude;
+    let refLon = trip.startLongitude;
+    if (delivered.length > 0) {
+      const last = delivered[delivered.length - 1];
+      if (last.latitude && last.longitude) {
+        refLat = last.latitude;
+        refLon = last.longitude;
+      }
+    }
+
+    // Measure each pending stop's distance from the reference point.
+    const withDistance = [];
+    for (const stop of pending) {
+      let dist = Number.MAX_SAFE_INTEGER;
+      if (refLat && refLon && stop.latitude && stop.longitude) {
+        const km = await getDrivingDistanceKm(refLat, refLon, stop.latitude, stop.longitude);
+        if (km != null) dist = km;
+      } else if (stop.expectedMileage != null) {
+        // Fallback to stored expected mileage when coordinates are unavailable.
+        dist = Number(stop.expectedMileage);
+      }
+      withDistance.push({ stop, dist });
+    }
+
+    withDistance.sort((a, b) => (direction === 'desc' ? b.dist - a.dist : a.dist - b.dist));
+
+    const orderedStops = [
+      ...delivered.map((s) => ({ id: s.id })),
+      ...withDistance.map(({ stop, dist }) => ({
+        id: stop.id,
+        expectedMileage: Number.isFinite(dist) && dist !== Number.MAX_SAFE_INTEGER ? Math.round(dist * 100) / 100 : undefined,
+      })),
+    ];
+
+    onReorderStops(orderedStops);
+  };
+
+  // Open the meter-reading prompt for a stop. On submit it saves the reading
+  // then opens the route dialog. `stop` may be null (route only).
+  const openMeterPrompt = (stop) => {
+    setMeterTarget(stop || null);
+  };
+
+  const handleMeterSubmit = async (reading) => {
+    const stop = meterTarget;
+    if (stop && onUpdateStopDetails) {
+      setSavingMeter(true);
+      try {
+        await onUpdateStopDetails(stop.id, { odometerReading: reading });
+      } finally {
+        setSavingMeter(false);
+      }
+    }
+    setMeterTarget(null);
+    setShowRouteDialog(true);
+  };
+
+  // Final vehicle meter reading, captured when completing the trip at the
+  // end point, then advances the trip status to completed.
+  const handleFinalMeterSubmit = async (reading) => {
+    setCompletingTrip(true);
+    try {
+      setGettingGps(true);
+      const gps = await getCurrentPosition();
+      setGettingGps(false);
+      await onAdvanceStatus('completed', gps, { finalOdometerReading: reading });
+      stopTracking();
+    } finally {
+      setCompletingTrip(false);
+      setShowFinalMeterDialog(false);
+    }
+  };
 
   const handleStopFieldChange = (stopId, field, value) => {
     setStopEdits((prev) => ({
@@ -179,13 +281,13 @@ export default function TripDetailDrawer({
     };
     onUpdateStopDetails(stop.id, payload);
 
-    // Show route dialog for next stop automatically
+    // For the next stop, prompt for the meter reading first (which then opens
+    // the route dialog) — same flow as every location.
     const stops = trip.stops || [];
     const currentIndex = stops.findIndex((s) => s.id === stop.id);
     const nextStop = stops[currentIndex + 1];
     if (nextStop) {
-      // Small delay to let the UI update, then show route dialog
-      setTimeout(() => setShowRouteDialog(true), 500);
+      setTimeout(() => setMeterTarget(nextStop), 500);
     }
   };
 
@@ -196,8 +298,8 @@ export default function TripDetailDrawer({
       onClose={onClose}
       PaperProps={{
         sx: {
-          width: { xs: '100vw', sm: 440 },
-          maxWidth: '100%',
+          width: { xs: '100%', sm: 440 },
+          maxWidth: '100vw',
           borderRadius: '0 !important',
           border: 'none !important',
           boxShadow: 'none',
@@ -267,6 +369,12 @@ export default function TripDetailDrawer({
                     <Typography variant="caption" color="text.secondary">Destination</Typography>
                     <Typography variant="body1" fontWeight={700} noWrap>{trip.destination}</Typography>
                   </Box>
+                  {trip.endPoint && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">End Point</Typography>
+                      <Typography variant="body1" fontWeight={700} noWrap>{trip.endPoint}</Typography>
+                    </Box>
+                  )}
                 </Stack>
               </Stack>
               <Divider sx={{ my: 1.5 }} />
@@ -276,15 +384,27 @@ export default function TripDetailDrawer({
                   {trip.scheduledDate} {trip.scheduledTime ? `at ${trip.scheduledTime.slice(0, 5)}` : ''}
                 </Typography>
               </Stack>
+              {trip.finalOdometerReading != null && (
+                <>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <SpeedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Final Vehicle Meter Reading:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700}>{trip.finalOdometerReading} km</Typography>
+                  </Stack>
+                </>
+              )}
             </Paper>
 
             {/* Info tiles */}
             <Stack direction="row" spacing={1.5}>
-              <InfoTile icon={<BusinessIcon fontSize="small" />} label="Customer" value={trip.customer?.companyName || '—'} />
               <InfoTile
                 icon={<PersonIcon fontSize="small" />}
                 label="Driver"
                 value={trip.driver ? `${trip.driver.firstName} ${trip.driver.lastName}` : 'Not assigned'}
+                fullWidth
               />
             </Stack>
 
@@ -294,9 +414,36 @@ export default function TripDetailDrawer({
 
             {/* Delivery Stops */}
           <Box>
-            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
-              Delivery Locations
-            </Typography>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap gap={1}>
+              <Typography variant="subtitle2" fontWeight={700}>
+                Delivery Locations
+              </Typography>
+              {onReorderStops && pendingStopCount >= 2 && (
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  {reordering && <CircularProgress size={14} sx={{ mr: 0.5 }} />}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<ArrowUpwardIcon fontSize="small" />}
+                    onClick={() => handleReorderByDistance('asc')}
+                    disabled={reordering}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    Nearest
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<ArrowDownwardIcon fontSize="small" />}
+                    onClick={() => handleReorderByDistance('desc')}
+                    disabled={reordering}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    Farthest
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
 
             {trip.stops?.length > 0 ? (
               <Stack spacing={1.5}>
@@ -316,7 +463,12 @@ export default function TripDetailDrawer({
                         borderRadius: 2,
                         border: '1px solid',
                         borderColor: isDelivered ? 'success.light' : isCurrentStop ? 'primary.light' : 'divider',
-                        bgcolor: isDelivered ? 'success.50' : isCurrentStop ? 'primary.50' : 'background.paper',
+                        bgcolor: (t) => {
+                          const dark = t.palette.mode === 'dark';
+                          if (isDelivered) return dark ? 'rgba(34,197,94,0.12)' : 'success.50';
+                          if (isCurrentStop) return dark ? 'rgba(59,130,246,0.12)' : 'primary.50';
+                          return 'background.paper';
+                        },
                         opacity: isLockedFuture ? 0.6 : 1,
                       }}
                     >
@@ -381,7 +533,16 @@ export default function TripDetailDrawer({
 
                           {/* Show GPS verification data for delivered stops */}
                           {isDelivered && (
-                            <Paper elevation={0} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
+                            <Paper
+                              elevation={0}
+                              sx={{
+                                p: 1.5,
+                                borderRadius: 1.5,
+                                bgcolor: (t) => (t.palette.mode === 'dark' ? 'rgba(148,163,184,0.08)' : 'grey.50'),
+                                border: '1px solid',
+                                borderColor: 'divider',
+                              }}
+                            >
                               <Stack spacing={0.5}>
                                 {!isDriver && stop.gpsMileage != null && (
                                   <Stack direction="row" spacing={1} alignItems="center">
@@ -394,6 +555,36 @@ export default function TripDetailDrawer({
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Driver Mileage:</Typography>
                                     <Typography variant="body2" fontWeight={700}>{stop.driverMileage} km</Typography>
+                                  </Stack>
+                                )}
+                                {!isDriver && stop.gpsMileage != null && stop.driverMileage != null && (() => {
+                                  const diff = Number(stop.driverMileage) - Number(stop.gpsMileage);
+                                  const absDiff = Math.abs(diff);
+                                  const pct = Number(stop.gpsMileage) > 0 ? (absDiff / Number(stop.gpsMileage)) * 100 : 0;
+                                  const isOver = diff > 0;
+                                  const diffColor = absDiff < 0.01 ? 'success.main' : pct > 10 ? 'error.main' : 'warning.main';
+                                  return (
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Difference:</Typography>
+                                      <Typography variant="body2" fontWeight={700} sx={{ color: diffColor }}>
+                                        {absDiff < 0.01 ? 'No difference' : `${isOver ? '+' : '−'}${absDiff.toFixed(2)} km (${pct.toFixed(1)}%)`}
+                                      </Typography>
+                                      {absDiff >= 0.01 && (
+                                        <Chip
+                                          size="small"
+                                          label={isOver ? 'Driver over' : 'Driver under'}
+                                          color={pct > 10 ? 'error' : 'warning'}
+                                          variant="outlined"
+                                          sx={{ height: 18, fontSize: 9 }}
+                                        />
+                                      )}
+                                    </Stack>
+                                  );
+                                })()}
+                                {stop.odometerReading != null && (
+                                  <Stack direction="row" spacing={1} alignItems="center">
+                                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 100 }}>Vehicle Meter:</Typography>
+                                    <Typography variant="body2" fontWeight={700}>{stop.odometerReading} km</Typography>
                                   </Stack>
                                 )}
                                 {!isDriver && stop.gpsLocationName && (
@@ -416,16 +607,16 @@ export default function TripDetailDrawer({
                             </Paper>
                           )}
 
-                          {/* Editable fields */}
-                          {canEditStops && !isDelivered && isCurrentStop && (
+                          {/* Editable fields — only once the trip has started */}
+                          {canEditStops && !isDelivered && isCurrentStop && trip.status === 'in_progress' && (
                             <>
-                              {/* Navigate / View Route button */}
+                              {/* View Route — prompts for the meter reading first */}
                               <Button
-                                variant="outlined"
+                                variant="contained"
                                 size="small"
                                 color="primary"
                                 startIcon={<GpsFixedIcon />}
-                                onClick={() => setShowRouteDialog(true)}
+                                onClick={() => openMeterPrompt(stop)}
                                 fullWidth
                               >
                                 View Best Route to {stop.locationName}
@@ -529,43 +720,95 @@ export default function TripDetailDrawer({
             </>
           )}
 
+          {/* Emergency stop toggle — shown while the trip is in progress */}
+          {onSetEmergencyStop && trip.status === 'in_progress' && (
+            <>
+              <Divider />
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: trip.emergencyStop ? 'error.light' : 'divider',
+                  bgcolor: (t) =>
+                    trip.emergencyStop
+                      ? (t.palette.mode === 'dark' ? 'rgba(220,38,38,0.14)' : 'error.50')
+                      : 'background.paper',
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <ReportProblemIcon color={trip.emergencyStop ? 'error' : 'warning'} />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="body2" fontWeight={700}>
+                      {trip.emergencyStop ? 'Emergency Stop Active' : 'Emergency Stop'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {trip.emergencyStop
+                        ? 'Admin has been notified you are stopped.'
+                        : 'Turn on if you need to stop during the trip.'}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant={trip.emergencyStop ? 'outlined' : 'contained'}
+                    color="error"
+                    size="small"
+                    disabled={settingEmergency}
+                    onClick={() => onSetEmergencyStop(!trip.emergencyStop)}
+                  >
+                    {settingEmergency ? '...' : trip.emergencyStop ? 'Clear' : 'Activate'}
+                  </Button>
+                </Stack>
+              </Paper>
+            </>
+          )}
+
           {canAdvance && action && (
             <>
               <Divider />
               {action.next === 'in_progress' ? (
-                /* Start Trip - show route optimization first */
+                /* Start Trip - prompt for the meter reading, then show route. */
                 <Button
                   variant="contained"
                   fullWidth
                   disabled={advancing}
                   startIcon={<GpsFixedIcon />}
-                  onClick={() => setShowRouteDialog(true)}
+                  onClick={() => openMeterPrompt((trip.stops || []).find((s) => s.status !== 'delivered') || null)}
                 >
                   Start Trip
                 </Button>
               ) : (
-                /* Complete Trip - normal GPS capture */
+                /* Complete Trip - prompt for the final vehicle meter reading first */
                 <Button
                   variant="contained"
                   fullWidth
                   disabled={advancing || gettingGps}
                   startIcon={gettingGps ? <CircularProgress size={16} color="inherit" /> : <GpsFixedIcon />}
-                  onClick={async () => {
-                    setGettingGps(true);
-                    const gps = await getCurrentPosition();
-                    setGettingGps(false);
-                    onAdvanceStatus(action.next, gps);
-                    // Stop tracking when trip is completed
-                    if (action.next === 'completed') {
-                      stopTracking();
-                    }
-                  }}
+                  onClick={() => setShowFinalMeterDialog(true)}
                 >
                   {gettingGps ? 'Getting location...' : advancing ? 'Updating...' : action.label}
                 </Button>
               )}
             </>
           )}
+
+          {/* Meter reading prompt — shown before the route dialog */}
+          <MeterReadingDialog
+            open={!!meterTarget}
+            locationName={meterTarget?.locationName}
+            submitting={savingMeter}
+            onSubmit={handleMeterSubmit}
+            onClose={() => setMeterTarget(null)}
+          />
+
+          {/* Final meter reading prompt — shown before completing the trip */}
+          <MeterReadingDialog
+            open={showFinalMeterDialog}
+            locationName={trip.endPoint || trip.destination}
+            submitting={completingTrip || gettingGps}
+            onSubmit={handleFinalMeterSubmit}
+            onClose={() => setShowFinalMeterDialog(false)}
+          />
 
           {/* Route Optimization Dialog */}
           <RouteOptimizationDialog

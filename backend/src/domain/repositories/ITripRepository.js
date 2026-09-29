@@ -28,6 +28,10 @@ class ITripRepository {
     throw new Error('ITripRepository.replaceStops not implemented');
   }
 
+  async reorderStops(_tripId, _orderedStops) {
+    throw new Error('ITripRepository.reorderStops not implemented');
+  }
+
   async generateNextTripNumber() {
     throw new Error('ITripRepository.generateNextTripNumber not implemented');
   }

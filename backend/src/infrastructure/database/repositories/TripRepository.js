@@ -32,6 +32,7 @@ function stopToDomain(instance) {
     gpsLocationName: plain.gpsLocationName,
     gpsMileage: plain.gpsMileage ? parseFloat(plain.gpsMileage) : null,
     driverMileage: plain.driverMileage ? parseFloat(plain.driverMileage) : null,
+    odometerReading: plain.odometerReading ? parseFloat(plain.odometerReading) : null,
     expectedMileage: plain.expectedMileage ? parseFloat(plain.expectedMileage) : null,
     arrivedAt: plain.arrivedAt,
     deliveredAt: plain.deliveredAt,
@@ -51,12 +52,14 @@ function toDomain(instance) {
     driverId: plain.driverId,
     origin: plain.origin,
     destination: plain.destination,
+    endPoint: plain.endPoint,
     scheduledDate: plain.scheduledDate,
     scheduledTime: plain.scheduledTime,
     status: plain.status,
     cargoDescription: plain.cargoDescription,
     remarks: plain.remarks,
     mileage: plain.mileage ? parseFloat(plain.mileage) : null,
+    finalOdometerReading: plain.finalOdometerReading ? parseFloat(plain.finalOdometerReading) : null,
     invoiceNumber: plain.invoiceNumber,
     startLatitude: plain.startLatitude ? parseFloat(plain.startLatitude) : null,
     startLongitude: plain.startLongitude ? parseFloat(plain.startLongitude) : null,
@@ -67,6 +70,9 @@ function toDomain(instance) {
     approvedBy: plain.approvedBy,
     approvedAt: plain.approvedAt,
     rejectionReason: plain.rejectionReason,
+    emergencyStop: plain.emergencyStop,
+    emergencyStopAt: plain.emergencyStopAt,
+    emergencyStopReason: plain.emergencyStopReason,
     createdBy: plain.createdBy,
     updatedBy: plain.updatedBy,
     createdAt: plain.createdAt,
@@ -132,6 +138,34 @@ class TripRepository extends ITripRepository {
     await TripStopModel.update(data, { where: { id: stopId } });
     const instance = await TripStopModel.findByPk(stopId, { include: [{ model: TripStopInvoiceModel, as: 'Invoices' }] });
     return instance ? stopToDomain(instance) : null;
+  }
+
+  // Re-sequence existing stops for a trip according to the given ordered list
+  // of stop ids. Optionally update each stop's expectedMileage. This preserves
+  // all other stop data (invoices, GPS, status) unlike replaceStops.
+  //
+  // trip_stops has a UNIQUE (trip_id, sequence_no) constraint, so we can't set
+  // final sequence numbers directly (an intermediate row could collide). We do
+  // it in two passes: first bump every row to a high temporary sequence, then
+  // assign the final 1..N values.
+  async reorderStops(tripId, orderedStops = []) {
+    const OFFSET = 1000; // temporary sequence space, well above any real count
+    return sequelize.transaction(async (transaction) => {
+      // Pass 1: move to temporary, non-colliding sequence numbers.
+      for (let i = 0; i < orderedStops.length; i += 1) {
+        await TripStopModel.update(
+          { sequenceNo: OFFSET + i + 1 },
+          { where: { id: orderedStops[i].id, tripId }, transaction }
+        );
+      }
+      // Pass 2: assign final sequence numbers (and expectedMileage if given).
+      for (let i = 0; i < orderedStops.length; i += 1) {
+        const { id, expectedMileage } = orderedStops[i];
+        const patch = { sequenceNo: i + 1 };
+        if (expectedMileage !== undefined) patch.expectedMileage = expectedMileage;
+        await TripStopModel.update(patch, { where: { id, tripId }, transaction });
+      }
+    }).then(() => this.findById(tripId));
   }
 
   async findStopById(stopId) {
@@ -216,9 +250,15 @@ class TripRepository extends ITripRepository {
   async generateNextTripNumber() {
     const year = new Date().getFullYear();
     const prefix = `TRP-${year}-`;
+    // IMPORTANT: include soft-deleted rows (paranoid: false) and order by the
+    // trip_number itself. The table is paranoid, so ordering by id while
+    // excluding soft-deleted trips can return an older row and produce a
+    // sequence number that is already taken by a (soft-)deleted trip, which
+    // then violates the unique constraint on trip_number.
     const last = await TripModel.findOne({
       where: { tripNumber: { [Op.like]: `${prefix}%` } },
-      order: [['id', 'DESC']],
+      order: [['tripNumber', 'DESC']],
+      paranoid: false,
     });
 
     let nextSeq = 1;

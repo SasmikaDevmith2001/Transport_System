@@ -108,7 +108,16 @@ export default function DataTable({
   };
 
   return (
-    <Paper variant="outlined">
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 4,
+        border: '1px solid',
+        borderColor: 'divider',
+        overflow: 'hidden',
+        boxShadow: '0 10px 30px -18px rgba(37,99,235,0.35)',
+      }}
+    >
       <Box sx={{ position: 'relative', minHeight: 200 }}>
         {isLoading && (
           <Box
@@ -131,7 +140,27 @@ export default function DataTable({
           renderCards()
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table size="medium" sx={{ minWidth: 650, '& .MuiTableCell-root': { whiteSpace: 'nowrap' } }}>
+            <Table
+              size="medium"
+              sx={{
+                minWidth: 650,
+                '& .MuiTableCell-root': { whiteSpace: 'nowrap' },
+                '& .MuiTableHead-root .MuiTableCell-root': {
+                  background: (t) =>
+                    t.palette.mode === 'dark' ? 'rgba(37,99,235,0.14)' : 'rgba(37,99,235,0.06)',
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                },
+                '& .MuiTableBody-root .MuiTableRow-root:last-of-type .MuiTableCell-root': {
+                  borderBottom: 'none',
+                },
+              }}
+            >
               <TableHead>
                 <TableRow>
                   {columns.map((col) => (
@@ -183,6 +212,8 @@ export default function DataTable({
         onPageChange={(_, newPage) => onPageChange(newPage + 1)}
         onRowsPerPageChange={(e) => onPageSizeChange(parseInt(e.target.value, 10))}
         sx={{
+          borderTop: '1px solid',
+          borderColor: 'divider',
           '.MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'center' },
           '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': { fontSize: { xs: '0.75rem', sm: '0.875rem' } },
         }}

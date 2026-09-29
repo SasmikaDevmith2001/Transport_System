@@ -28,9 +28,22 @@ export default function ConfirmDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <WarningAmberIcon color="warning" />
+          <Box
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: 2.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: (t) => (confirmColor === 'error' ? 'rgba(220,38,38,0.12)' : 'rgba(217,119,6,0.14)'),
+              color: confirmColor === 'error' ? 'error.main' : 'warning.main',
+            }}
+          >
+            <WarningAmberIcon />
+          </Box>
           <Typography variant="h6" fontWeight={700}>
             {title}
           </Typography>
@@ -40,7 +53,7 @@ export default function ConfirmDialog({
         </IconButton>
       </Box>
 
-      <Divider sx={{ mx: 3, mt: 1 }} />
+      <Divider />
 
       <DialogContent sx={{ px: 3, py: 3 }}>
         <Typography variant="body1" color="text.secondary">

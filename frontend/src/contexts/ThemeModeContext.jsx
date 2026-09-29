@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { buildTheme } from '../theme/theme';
 
@@ -6,8 +6,20 @@ const ThemeModeContext = createContext(null);
 
 const STORAGE_KEY = 'anuradha_tms_theme_mode';
 
+// Keep the <html> element in sync so Tailwind's `dark:` variant and
+// DaisyUI's `data-theme` respond to the same signal as MUI.
+function applyDomTheme(mode) {
+  const root = document.documentElement;
+  root.classList.toggle('dark', mode === 'dark');
+  root.setAttribute('data-theme', mode === 'dark' ? 'business' : 'corporate');
+}
+
 export function ThemeModeProvider({ children }) {
   const [mode, setMode] = useState(() => localStorage.getItem(STORAGE_KEY) || 'light');
+
+  useEffect(() => {
+    applyDomTheme(mode);
+  }, [mode]);
 
   const toggleMode = useCallback(() => {
     setMode((prev) => {

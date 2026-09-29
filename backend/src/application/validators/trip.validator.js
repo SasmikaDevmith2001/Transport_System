@@ -14,6 +14,7 @@ const createTripSchema = Joi.object({
   driverId: Joi.number().integer().positive().allow(null),
   origin: Joi.string().trim().min(1).max(255).required(),
   destination: Joi.string().trim().min(1).max(255).required(),
+  endPoint: Joi.string().trim().max(255).allow(null, ''),
   scheduledDate: Joi.date().iso().required(),
   scheduledTime: Joi.string()
     .pattern(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
@@ -28,6 +29,7 @@ const updateTripSchema = Joi.object({
   customerId: Joi.number().integer().positive(),
   origin: Joi.string().trim().min(1).max(255),
   destination: Joi.string().trim().min(1).max(255),
+  endPoint: Joi.string().trim().max(255).allow(null, ''),
   scheduledDate: Joi.date().iso(),
   scheduledTime: Joi.string()
     .pattern(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
@@ -45,10 +47,12 @@ const updateTripStatusSchema = Joi.object({
   status: Joi.string().valid('pending', 'assigned', 'in_progress', 'completed', 'cancelled').required(),
   latitude: Joi.number().min(-90).max(90).allow(null),
   longitude: Joi.number().min(-180).max(180).allow(null),
+  finalOdometerReading: Joi.number().min(0).precision(2).allow(null),
 });
 
 const updateTripDriverDetailsSchema = Joi.object({
   driverMileage: Joi.number().min(0).precision(2).allow(null),
+  odometerReading: Joi.number().min(0).precision(2).allow(null),
   invoices: Joi.array().items(Joi.string().trim().min(1).max(100)).allow(null),
   invoiceNumber: Joi.string().trim().max(100).allow(null, ''),
   status: Joi.string().valid('arrived', 'delivered', 'skipped').allow(null),
@@ -61,6 +65,23 @@ const updateTripDriverDetailsSchema = Joi.object({
 const approveTripSchema = Joi.object({
   approved: Joi.boolean().required(),
   rejectionReason: Joi.string().trim().max(2000).allow(null, ''),
+});
+
+const emergencyStopSchema = Joi.object({
+  active: Joi.boolean().required(),
+  reason: Joi.string().trim().max(255).allow(null, ''),
+});
+
+const reorderStopsSchema = Joi.object({
+  stops: Joi.array()
+    .items(
+      Joi.object({
+        id: Joi.number().integer().positive().required(),
+        expectedMileage: Joi.number().min(0).precision(2).allow(null),
+      })
+    )
+    .min(1)
+    .required(),
 });
 
 const stopIdParamSchema = Joi.object({
@@ -93,6 +114,8 @@ module.exports = {
   updateTripStatusSchema,
   updateTripDriverDetailsSchema,
   approveTripSchema,
+  emergencyStopSchema,
+  reorderStopsSchema,
   listTripsQuerySchema,
   idParamSchema,
   stopIdParamSchema,

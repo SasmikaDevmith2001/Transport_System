@@ -11,6 +11,9 @@ class Driver {
     licenseExpiry,
     address,
     vehicleNumber,
+    insuranceProvider,
+    insurancePolicyNumber,
+    insuranceExpiry,
     status,
     notes,
     createdBy,
@@ -30,6 +33,9 @@ class Driver {
     this.licenseExpiry = licenseExpiry;
     this.address = address;
     this.vehicleNumber = vehicleNumber;
+    this.insuranceProvider = insuranceProvider;
+    this.insurancePolicyNumber = insurancePolicyNumber;
+    this.insuranceExpiry = insuranceExpiry;
     this.status = status;
     this.notes = notes;
     this.createdBy = createdBy;
@@ -49,6 +55,22 @@ class Driver {
 
   hasLicenseExpired(referenceDate = new Date()) {
     return new Date(this.licenseExpiry).getTime() < referenceDate.getTime();
+  }
+
+  // Days until a date (negative if already past). null if no date.
+  static daysUntil(dateStr, referenceDate = new Date()) {
+    if (!dateStr) return null;
+    const ms = new Date(dateStr).getTime() - referenceDate.getTime();
+    return Math.ceil(ms / (1000 * 60 * 60 * 24));
+  }
+
+  // Derived status for a document expiry: 'expired' | 'expiring' | 'valid' | 'unknown'
+  static expiryStatus(dateStr, warnDays = 30, referenceDate = new Date()) {
+    const days = Driver.daysUntil(dateStr, referenceDate);
+    if (days == null) return 'unknown';
+    if (days < 0) return 'expired';
+    if (days <= warnDays) return 'expiring';
+    return 'valid';
   }
 }
 

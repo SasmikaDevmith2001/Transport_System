@@ -18,11 +18,12 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LinkIcon from '@mui/icons-material/Link';
+import BadgeIcon from '@mui/icons-material/Badge';
+import DialogHeader from '../../../components/feedback/DialogHeader';
 import { useLinkableDriverUsers } from '../hooks/useDrivers';
 
 const driverSchema = Joi.object({
@@ -32,6 +33,9 @@ const driverSchema = Joi.object({
   licenseNumber: Joi.string().trim().min(3).max(50).required(),
   licenseExpiry: Joi.string().required().messages({ 'string.empty': 'License expiry date is required' }),
   vehicleNumber: Joi.string().trim().allow('').max(30),
+  insuranceProvider: Joi.string().trim().allow('').max(150),
+  insurancePolicyNumber: Joi.string().trim().allow('').max(100),
+  insuranceExpiry: Joi.string().allow(''),
   address: Joi.string().trim().allow('').max(255),
   status: Joi.string().valid('active', 'inactive', 'on_leave', 'suspended').required(),
   notes: Joi.string().trim().allow('').max(2000),
@@ -44,10 +48,39 @@ const DEFAULTS = {
   licenseNumber: '',
   licenseExpiry: '',
   vehicleNumber: '',
+  insuranceProvider: '',
+  insurancePolicyNumber: '',
+  insuranceExpiry: '',
   address: '',
   status: 'active',
   notes: '',
 };
+
+// Days until a date (negative if past). Used for the expiry warnings.
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+// Inline warning shown under an expiry date field.
+function ExpiryHint({ days, label }) {
+  if (days == null) return null;
+  if (days < 0) {
+    return (
+      <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'error.main', fontWeight: 600 }}>
+        {label} expired {Math.abs(days)} day{Math.abs(days) === 1 ? '' : 's'} ago
+      </Typography>
+    );
+  }
+  if (days <= 30) {
+    return (
+      <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'warning.main', fontWeight: 600 }}>
+        {label} expires in {days} day{days === 1 ? '' : 's'}
+      </Typography>
+    );
+  }
+  return null;
+}
 
 export default function DriverFormDialog({ open, driver = null, submitting = false, onSubmit, onClose }) {
   const isEdit = !!driver;
@@ -59,12 +92,28 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm({ resolver: joiResolver(driverSchema), defaultValues: DEFAULTS });
 
+  const licenseExpiryVal = watch('licenseExpiry');
+  const insuranceExpiryVal = watch('insuranceExpiry');
+  const licenseDays = daysUntil(licenseExpiryVal);
+  const insuranceDays = daysUntil(insuranceExpiryVal);
+
   useEffect(() => {
     if (open) {
-      reset(driver ? { ...DEFAULTS, ...driver, userId: driver.userId || '', licenseExpiry: driver.licenseExpiry?.slice(0, 10) || '' } : DEFAULTS);
+      reset(driver
+        ? {
+            ...DEFAULTS,
+            ...driver,
+            userId: driver.userId || '',
+            licenseExpiry: driver.licenseExpiry?.slice(0, 10) || '',
+            insuranceProvider: driver.insuranceProvider || '',
+            insurancePolicyNumber: driver.insurancePolicyNumber || '',
+            insuranceExpiry: driver.insuranceExpiry?.slice(0, 10) || '',
+          }
+        : DEFAULTS);
     }
   }, [open, driver, reset]);
 
@@ -116,22 +165,12 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, pt: 3, pb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main' }}>
-            {isEdit ? 'Edit Driver' : 'New Driver'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            {isEdit ? 'Update driver information below' : 'Fill in the details to register a new driver'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Divider sx={{ mx: 0 }} />
+      <DialogHeader
+        icon={<BadgeIcon />}
+        title={isEdit ? 'Edit Driver' : 'New Driver'}
+        subtitle={isEdit ? 'Update driver information below' : 'Fill in the details to register a new driver'}
+        onClose={onClose}
+      />
 
       <DialogContent sx={{ px: 3, py: 3, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         {/* Section: Link User Account */}
@@ -252,6 +291,7 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
                   />
                 )}
               />
+              <ExpiryHint days={licenseDays} label="License" />
             </Grid>
             <Grid item xs={12}>
               <Controller
@@ -259,6 +299,37 @@ export default function DriverFormDialog({ open, driver = null, submitting = fal
                 control={control}
                 render={({ field }) => <TextField {...field} label="Vehicle Number" fullWidth size="small" placeholder="e.g., ABC-1234" />}
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="insuranceProvider"
+                control={control}
+                render={({ field }) => <TextField {...field} label="Insurance Provider" fullWidth size="small" placeholder="e.g., Ceylinco" />}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="insurancePolicyNumber"
+                control={control}
+                render={({ field }) => <TextField {...field} label="Insurance Policy No." fullWidth size="small" placeholder="Policy number" />}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="insuranceExpiry"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="date"
+                    label="Insurance Expiry"
+                    fullWidth
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                )}
+              />
+              <ExpiryHint days={insuranceDays} label="Insurance" />
             </Grid>
           </Grid>
         </Paper>

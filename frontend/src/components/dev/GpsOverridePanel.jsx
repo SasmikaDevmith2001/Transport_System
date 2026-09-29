@@ -82,12 +82,13 @@ export default function GpsOverridePanel() {
       sx={{
         position: 'fixed',
         bottom: 16,
-        left: 16,
+        right: 16,
         zIndex: 9999,
         borderRadius: 2,
         overflow: 'hidden',
         width: expanded ? 320 : 'auto',
         maxWidth: 'calc(100vw - 32px)',
+        opacity: expanded ? 1 : 0.85,
         border: '2px solid',
         borderColor: position ? 'success.main' : 'warning.main',
       }}

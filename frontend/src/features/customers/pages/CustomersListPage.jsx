@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Collapse, Chip } from '@mui/material';
+import { Box, Button, InputAdornment, TextField, MenuItem, Stack, IconButton, Typography, Avatar, Collapse, Chip, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import BusinessIcon from '@mui/icons-material/Business';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import MapIcon from '@mui/icons-material/Map';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useSnackbar } from 'notistack';
@@ -37,6 +38,7 @@ export default function CustomersListPage() {
   const [locationFormOpen, setLocationFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
   const [locationCustomerId, setLocationCustomerId] = useState(null);
+  const [locationCustomer, setLocationCustomer] = useState(null);
   const [deleteLocationTarget, setDeleteLocationTarget] = useState(null);
 
   const params = { page, pageSize, search: search || undefined, status: status || undefined, sortBy, sortOrder };
@@ -87,7 +89,7 @@ export default function CustomersListPage() {
               {customerLocations.length === 0 && hasPermission('customers:create') && (
                 <IconButton
                   size="small"
-                  onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
+                  onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setLocationCustomer(row); setEditingLocation(null); setLocationFormOpen(true); }}
                   title="Add location"
                 >
                   <AddIcon fontSize="small" color="primary" />
@@ -101,7 +103,7 @@ export default function CustomersListPage() {
                     <LocationOnIcon sx={{ fontSize: 14, color: 'primary.main' }} />
                     <Typography variant="caption" fontWeight={500} sx={{ flex: 1 }}>{loc.name}</Typography>
                     {hasPermission('customers:update') && (
-                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditingLocation(loc); setLocationCustomerId(row.id); setLocationFormOpen(true); }}>
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditingLocation(loc); setLocationCustomerId(row.id); setLocationCustomer(row); setLocationFormOpen(true); }}>
                         <EditIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
@@ -115,8 +117,10 @@ export default function CustomersListPage() {
                 {hasPermission('customers:create') && (
                   <Button
                     size="small"
+                    variant="outlined"
+                    color="primary"
                     startIcon={<AddIcon />}
-                    onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setEditingLocation(null); setLocationFormOpen(true); }}
+                    onClick={(e) => { e.stopPropagation(); setLocationCustomerId(row.id); setLocationCustomer(row); setEditingLocation(null); setLocationFormOpen(true); }}
                     sx={{ alignSelf: 'flex-start', mt: 0.5 }}
                   >
                     Add Location
@@ -129,6 +133,36 @@ export default function CustomersListPage() {
       },
     },
     { field: 'phone', headerName: 'Phone', sortable: false },
+    {
+      field: 'address',
+      headerName: 'Address',
+      sortable: false,
+      render: (row) => {
+        const parts = [row.addressLine1, row.addressLine2, row.city, row.country].filter(Boolean);
+        const fullAddress = parts.join(', ');
+        if (!fullAddress) return '—';
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+        return (
+          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ maxWidth: 260 }}>
+            <Typography variant="body2" noWrap title={fullAddress} sx={{ flex: 1, minWidth: 0 }}>
+              {fullAddress}
+            </Typography>
+            <Tooltip title="Open in Google Maps">
+              <IconButton
+                size="small"
+                component="a"
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MapIcon sx={{ fontSize: 16 }} color="primary" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      },
+    },
     { field: 'city', headerName: 'City', sortable: true, render: (row) => row.city || '-' },
     { field: 'status', headerName: 'Status', sortable: true, render: (row) => <StatusChip status={row.status} /> },
     {
@@ -188,6 +222,7 @@ export default function CustomersListPage() {
   return (
     <Box>
       <PageHeader
+        icon={<BusinessIcon fontSize="medium" />}
         title="Customer Management"
         description="Manage client companies your transport operations serve."
         actions={
@@ -205,7 +240,7 @@ export default function CustomersListPage() {
           size="small"
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 420 } }}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField
@@ -257,6 +292,7 @@ export default function CustomersListPage() {
       <LocationFormDialog
         open={locationFormOpen}
         location={editingLocation ? { ...editingLocation, customerId: locationCustomerId } : null}
+        customer={locationCustomer}
         submitting={createLocation.isPending || updateLocation.isPending}
         onSubmit={async (values) => {
           try {
@@ -270,11 +306,12 @@ export default function CustomersListPage() {
             }
             setLocationFormOpen(false);
             setEditingLocation(null);
+            setLocationCustomer(null);
           } catch (err) {
             enqueueSnackbar(err.response?.data?.message || 'Failed to save location', { variant: 'error' });
           }
         }}
-        onClose={() => { setLocationFormOpen(false); setEditingLocation(null); }}
+        onClose={() => { setLocationFormOpen(false); setEditingLocation(null); setLocationCustomer(null); }}
       />
 
       <ConfirmDialog

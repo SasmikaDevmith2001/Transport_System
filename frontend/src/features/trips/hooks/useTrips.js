@@ -52,7 +52,7 @@ export function useAssignTrip() {
 export function useUpdateTripStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, gps }) => tripsApi.updateStatus(id, status, gps),
+    mutationFn: ({ id, status, gps, extra }) => tripsApi.updateStatus(id, status, gps, extra),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
   });
 }
@@ -69,6 +69,25 @@ export function useApproveTrip() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }) => tripsApi.approveTrip(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
+  });
+}
+
+export function useSetEmergencyStop() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => tripsApi.setEmergencyStop(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      queryClient.invalidateQueries({ queryKey: ['tracking'] });
+    },
+  });
+}
+
+export function useReorderStops() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, stops }) => tripsApi.reorderStops(id, stops),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trips'] }),
   });
 }
